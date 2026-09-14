@@ -52,6 +52,14 @@ account reuses the same server-owned account and tenant mapping. Every other
 subject is rejected. Eztudy 0.1 refuses to start if the database already contains
 more than one canonical account.
 
+## Frontend deployment
+
+For Vercel, connect the repository with `web` as the project Root Directory and
+configure `VITE_PRIVY_APP_ID` plus the HTTPS `VITE_API_BASE_URL` for Production.
+Keep those values in deployment settings, never in the repository. Treat a
+successful build as incomplete until the matching API and authenticated user path
+have been verified on the public origin.
+
 ## Verification
 
 ```sh
