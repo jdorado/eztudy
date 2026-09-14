@@ -1,0 +1,17 @@
+Eztudy project-owned source is MIT licensed. Dependencies retain their own terms.
+
+The web build uses @privy-io/react-auth. Its dependency graph includes MetaMask
+SDK and WalletConnect/Reown components even when wallet UI is disabled.
+
+MetaMask SDK is copyright ConsenSys Software Inc. It is used subject to the
+Non-Commercial Use and notice requirements in:
+/licenses/METAMASK-SDK-LICENSE.txt
+
+Portions © 2025 Reown, Inc. All Rights Reserved.
+The exact WalletKit and Reown AppKit licenses present in the locked graph are at:
+/licenses/WALLETCONNECT-COMMUNITY-LICENSE.md
+/licenses/REOWN-APPKIT-1.8.9-LICENSE.md
+/licenses/REOWN-APPKIT-1.7.8-LICENSE.txt
+
+Review the exact installed dependency licenses before distribution or commercial
+use. This notice is not legal advice.

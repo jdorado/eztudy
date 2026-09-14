@@ -1,0 +1,14 @@
+[project]
+name = "eztudy-publishing"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "Deterministic Markdown check and publication"
+license = "MIT"
+readme = "README.md"
+[project.scripts]
+eztudy = "eztudy_publishing.cli:main"
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+include = ["eztudy_publishing*"]

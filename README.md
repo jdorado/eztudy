@@ -1,0 +1,78 @@
+# Eztudy
+
+Eztudy is a small, self-hostable learning application. It combines a responsive
+React interface, a canonical FastAPI/MongoDB data service, Privy authentication,
+and agent execution through [Ez](https://github.com/jdorado/ez-agents).
+
+This 0.1 baseline supports authenticated owner chat, Markdown Program publication,
+flat ordered Items, canonical Program selection, and publication receipts. It is
+deliberately a controlled single-owner release: automatic tenant provisioning,
+open public registration, account deletion/export, storage quotas, media Items,
+and production multi-tenant assurance are not included.
+
+## Architecture
+
+- `web/` presents authenticated application state; it owns no learner identity,
+  durable content, or agent runtime.
+- `api/` verifies Privy tokens and owns canonical accounts, tenant mappings,
+  Programs, publication receipts, and chat projections in MongoDB.
+- `plugin/` provides deterministic `eztudy check` and `eztudy publish` operations.
+- Ez admits application turns and transports controls and results. The native
+  engine owns reasoning, context, sessions, tools, goals, and delegation.
+
+See the [architecture contract](docs/ez-eztudy-architecture-contract.md),
+[publishing contract](docs/item-publishing-spec.md), and
+[self-hosting guide](deploy/README.md).
+
+## Local development
+
+Requires Node.js 22+, pnpm 10, Python 3.11+, uv, and MongoDB. Create a Privy app
+with Google login enabled and allow `http://localhost:5175` as an origin.
+
+```sh
+cp api/.env.example api/.env.local
+cp web/.env.example web/.env.local
+# Configure both files. Set EZTUDY_ALLOWED_SUBJECT to your Privy subject.
+
+cd api
+uv sync --locked
+uv run --env-file .env.local uvicorn eztudy_api.main:app --host 127.0.0.1 --port 8111
+```
+
+In another terminal:
+
+```sh
+cd web
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open `http://localhost:5175`. Vite proxies `/api` to the local service. A returning
+account reuses the same server-owned account and tenant mapping. Every other
+subject is rejected. Eztudy 0.1 refuses to start if the database already contains
+more than one canonical account.
+
+## Verification
+
+```sh
+cd web && pnpm build && pnpm audit --audit-level high
+cd ../api && uv run --env-file .env.local python -m unittest discover -s tests -v
+cd ../plugin && npm pack --dry-run
+```
+
+Code checks are not release acceptance. Authentication changes need a real
+sign-in/refresh/sign-out/sign-in path. Chat and publication changes need a real Ez
+receipt and an authenticated frontend readback. Deployment changes need an isolated
+staging installation, exact revisions, backup/rollback proof, and a post-cutover
+readback.
+
+## Operations and safety
+
+Configuration examples contain placeholders only. Never commit `.env` files,
+MongoDB data, learner content, Ez/native sessions, publication credentials, or
+deployment state. Read [`DATA_HANDLING.md`](DATA_HANDLING.md) before inviting users
+and report vulnerabilities through [`SECURITY.md`](SECURITY.md).
+
+Project-owned source is MIT licensed. Dependencies retain their own terms; web
+redistributors must review [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md),
+including the non-MIT terms present in the current Privy dependency graph.
