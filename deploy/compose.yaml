@@ -4,7 +4,7 @@ services:
     build:
       context: ..
       dockerfile: api/Dockerfile
-    image: ${API_IMAGE:-eztudy-api:0.1.1}
+    image: ${API_IMAGE:-eztudy-api:0.1.2}
     user: "${API_UID:-1000}:${API_GID:-1000}"
     init: true
     restart: unless-stopped

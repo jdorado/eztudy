@@ -1,5 +1,5 @@
 {
   "schemaVersion":2,
-  "services":{"publisher":{"buildTarget":"publisher","volumes":{"state":"/state"},"environment":{"EZTUDY_CONFIG_FILE":"/state/connection.json"},"healthcheck":["CMD","python","-c","import eztudy_publishing.cli"],"command":["sleep","infinity"],"memoryMiB":128}},
+  "services":{"publisher":{"buildTarget":"publisher","volumes":{"state":"/state"},"environment":{"EZTUDY_CONFIG_FILE":"/state/connection.json"},"healthcheck":["python","-c","import eztudy_publishing.cli"],"command":["sleep","infinity"],"memoryMiB":128}},
   "commands":{"eztudy":{"service":"publisher","argv":["eztudy"]}}
 }

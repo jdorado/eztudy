@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 - 2026-09-14
+
+- Express the plugin healthcheck as the command arguments expected by the Ez
+  manager, avoiding a duplicated Docker `CMD` marker.
+
 ## 0.1.1 - 2026-09-14
 
 - Package the Python publisher module as an explicit directory so the native Ez
