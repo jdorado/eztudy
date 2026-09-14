@@ -1,9 +1,9 @@
 [project]
 name = "eztudy-api"
-version = "0.1.0"
+version = "0.1.1"
 description = "Canonical authenticated Eztudy application API"
 requires-python = ">=3.11"
-dependencies = ["fastapi>=0.141,<0.142", "starlette>=1.6,<1.7", "uvicorn>=0.40,<0.41", "PyJWT[crypto]>=2.10,<3", "pymongo>=4.17,<5", "eztudy-publishing==0.1.0"]
+dependencies = ["fastapi>=0.141,<0.142", "starlette>=1.6,<1.7", "uvicorn>=0.40,<0.41", "PyJWT[crypto]>=2.10,<3", "pymongo>=4.17,<5", "eztudy-publishing==0.1.1"]
 
 [tool.uv.sources]
 eztudy-publishing = {path = "../plugin", editable = true}

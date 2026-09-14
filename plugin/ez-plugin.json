@@ -1,5 +1,5 @@
 {
-  "schemaVersion":1,"id":"eztudy","version":"0.1.0",
+  "schemaVersion":1,"id":"eztudy","version":"0.1.1",
   "description":"Author flat Program/Item Markdown, validate it, and publish authorized readouts to Eztudy. Read the authoring skill before first use.",
   "commands":{"eztudy":{"executable":"bin/eztudy","args":[],"exposure":{"receivesExternalContent":true,"sendsExternally":true,"changesRecords":true,"requiresReview":true}}},
   "skills":["skills/authoring/SKILL.md"]

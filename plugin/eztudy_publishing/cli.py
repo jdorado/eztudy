@@ -18,7 +18,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 def main():
     parser = argparse.ArgumentParser(prog='eztudy', description='Validate or publish a flat Markdown Program through the authenticated Eztudy API.')
-    parser.add_argument('--version', action='version', version='eztudy 0.1.0')
+    parser.add_argument('--version', action='version', version='eztudy 0.1.1')
     parser.add_argument('operation', choices=['check', 'publish'])
     parser.add_argument('directory', help='Program source directory containing program.md and items/')
     args = parser.parse_args()

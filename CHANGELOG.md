@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.1.1 - 2026-09-14
+
+- Package the Python publisher module as an explicit directory so the native Ez
+  plugin manager can inspect and install the release.
+
+## 0.1.0 - 2026-09-14
 
 - Add Privy-authenticated canonical accounts with one-owner admission.
 - Add authenticated owner chat through Ez, including attachments and cancellation.

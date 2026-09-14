@@ -207,7 +207,7 @@ wheels = [
 
 [[package]]
 name = "eztudy-api"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "eztudy-publishing" },
@@ -230,7 +230,7 @@ requires-dist = [
 
 [[package]]
 name = "eztudy-publishing"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "../plugin" }
 
 [[package]]

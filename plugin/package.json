@@ -1,1 +1,1 @@
-{"name":"ez-eztudy","version":"0.1.0","license":"MIT","files":["ez-plugin.json","ez-deployment.json","Dockerfile",".dockerignore","pyproject.toml","eztudy_publishing/*.py","bin","skills","README.md","LICENSE"]}
+{"name":"ez-eztudy","version":"0.1.1","license":"MIT","files":["ez-plugin.json","ez-deployment.json","Dockerfile",".dockerignore","pyproject.toml","eztudy_publishing/__init__.py","eztudy_publishing/cli.py","eztudy_publishing/schema.py","bin","skills","README.md","LICENSE"]}
