@@ -44,18 +44,20 @@ class ChatBoundaryTests(unittest.TestCase):
 
     def test_selection_change_fails_before_ez(self):
         self.account["selected_program_id"] = "program-two"
-        with patch.object(chat.ez, "binding_for") as binding:
+        with patch.object(chat.ez, "binding_for", return_value={"bindingId": "test-binding"}), \
+             patch.object(chat.ez, "call") as transport:
             with self.assertRaises(HTTPException) as error:
                 chat.submit(chat.Message(request_id=uuid4(), text="hi", program_id="program-one"), "verified")
             self.assertEqual(error.exception.status_code, 409)
-            binding.assert_not_called()
+            transport.assert_not_called()
 
     def test_item_without_program_is_rejected(self):
-        with patch.object(chat.ez, "binding_for") as binding:
+        with patch.object(chat.ez, "binding_for", return_value={"bindingId": "test-binding"}), \
+             patch.object(chat.ez, "call") as transport:
             with self.assertRaises(HTTPException) as error:
                 chat.submit(chat.Message(request_id=uuid4(), text="hi", item_id="item-one"), "verified")
             self.assertEqual(error.exception.status_code, 422)
-            binding.assert_not_called()
+            transport.assert_not_called()
 
     def test_attachment_is_forwarded_and_never_stored(self):
         attachment = chat.Attachment(name="note.md", data=base64.b64encode(b"attachment QA").decode())
