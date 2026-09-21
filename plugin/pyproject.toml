@@ -5,10 +5,12 @@ requires-python = ">=3.11"
 description = "Deterministic Markdown check and publication"
 license = "MIT"
 readme = "README.md"
+dependencies = []
 [project.scripts]
 eztudy = "eztudy_publishing.cli:main"
 [build-system]
-requires = ["setuptools>=75"]
+# uv.lock covers the project environment; keep the PEP 517 backend exact here.
+requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["eztudy_publishing*"]

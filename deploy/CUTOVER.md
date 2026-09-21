@@ -43,10 +43,13 @@ until the new instance passes post-cutover readback.
 
 ## Cutover and rollback
 
-Deploy the immutable frontend with `VITE_API_BASE_URL` set to the staged API origin,
-then switch the public reverse-proxy/domain route only after the authenticated gate
-passes. Re-run health, sign-in, Coach, publication, and visible revision checks on
-the public origin.
+Deploy the immutable frontend with `VITE_API_BASE_URL` set to the staged API origin.
+Set API `EZTUDY_CORS_ORIGINS` to the exact public browser origin (for example
+`https://eztudy.space`) before switching the domain; a Vercel preview origin is not
+enough. Confirm `OPTIONS /api/account` from that `Origin` returns
+`Access-Control-Allow-Origin`, then switch the public reverse-proxy/domain route
+only after the authenticated gate passes. Re-run health, sign-in, Coach,
+publication, and visible revision checks on the public origin.
 
 Rollback restores the previous frontend deployment and proxy route. If any migration
 wrote production data, use its reviewed reversal or restore the tested snapshot;

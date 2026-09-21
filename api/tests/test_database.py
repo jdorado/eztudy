@@ -66,8 +66,7 @@ class AccountAdmissionTests(unittest.TestCase):
         self.store.count_documents.return_value = 1
         self.store.find_one.return_value = {"_id": "did:privy:owner"}
         with patch.dict(os.environ, {"EZTUDY_ALLOWED_SUBJECT": "did:privy:owner"}), \
-             patch.object(database.database, "command"), \
-             patch.object(database.database, "chat_turns"):
+             patch.object(database.database, "command"):
             database.initialize()
         self.store.update_one.assert_called_once_with(
             {"_id": "did:privy:owner"}, {"$set": {"singleton": "owner"}})

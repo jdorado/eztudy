@@ -1,1 +1,53 @@
-{"name":"ez-eztudy","version":"0.1.2","license":"MIT","files":["ez-plugin.json","ez-deployment.json","Dockerfile",".dockerignore","pyproject.toml","eztudy_publishing/__init__.py","eztudy_publishing/cli.py","eztudy_publishing/schema.py","bin","skills","README.md","LICENSE"]}
+{
+  "name": "@jc_stack/ez-eztudy",
+  "version": "0.1.2",
+  "private": true,
+  "description": "Deterministic Markdown validation and scoped publication for Eztudy",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.9.0",
+  "bin": {
+    "eztudy": "bin/eztudy"
+  },
+  "files": [
+    "bin/eztudy",
+    "eztudy_publishing/__init__.py",
+    "eztudy_publishing/cli.py",
+    "eztudy_publishing/schema.py",
+    "skills/authoring/SKILL.md",
+    "tests/test_schema.py",
+    "scripts/release-check.mjs",
+    "ez-plugin.json",
+    "ez-deployment.json",
+    "Dockerfile",
+    ".dockerignore",
+    "pyproject.toml",
+    "uv.lock",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "verify": "python3 -m py_compile eztudy_publishing/*.py && npm test && npm run release:check",
+    "release:check": "node scripts/release-check.mjs"
+  },
+  "keywords": [
+    "ez",
+    "eztudy",
+    "markdown",
+    "publishing"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jdorado/eztudy.git",
+    "directory": "plugin"
+  },
+  "homepage": "https://github.com/jdorado/eztudy/tree/main/plugin",
+  "bugs": {
+    "url": "https://github.com/jdorado/eztudy/issues"
+  }
+}

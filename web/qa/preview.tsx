@@ -1,6 +1,8 @@
 // Isolated development entry, not imported by the authenticated app or production build.
 import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Icon } from '../src/Icon'
+import { MarkdownContent } from '../src/MarkdownContent'
 import { LearningSpace } from '../src/LearningSpace'
 import type { Program } from '../src/content'
 import '../src/style.css'
@@ -60,6 +62,30 @@ The structure of the input changes which procedures are available.`},provenance:
 },{id:'preview-observation',title:'The art of noticing',purpose:'Describe an observation before explaining it.',items:[]}]
 function Preview() {
   const [selected, setSelected] = useState(programs[0].id)
-  return <LearningSpace preview content={{programs, selected_program_id:selected}} onSelectProgram={setSelected} identity={{name:'Layout preview'}} coach={<section className="chat-shell" aria-label="Coach preview"><div className="chat-messages"><div className="chat-empty"><p className="eyebrow">Coach · visual-only preview</p><h1>What’s on your mind?</h1><p>The authenticated app connects this space to your live Coach.</p></div><p className="message user-message">What makes an instruction precise?</p><p className="message assistant-message">It gives the reader enough information to choose one next action. “Find a book” leaves choices open; “read the next spine from left to right” makes the next step clear.</p></div><div className="chat-composer"><p className="status-detail">Sending is available in the authenticated app.</p></div></section>} />
+  const coach = (
+    <section className="chat-window" aria-label="Coach preview">
+      <div className="chat-body">
+        <div className="chat-empty message-stack ai-stack">
+          <span className="message-avatar" aria-hidden="true">AI</span>
+          <div className="message ai"><p>Start a conversation with Coach...</p></div>
+        </div>
+        <div className="message-stack user-stack">
+          <div className="message user">What makes an instruction precise?</div>
+        </div>
+        <div className="message-stack ai-stack">
+          <span className="message-avatar" aria-hidden="true">AI</span>
+          <div className="message ai"><MarkdownContent markdown={'It gives the reader enough information to choose one next action. “Find a book” leaves choices open; “read the next spine from left to right” makes the next step clear.'} /></div>
+        </div>
+      </div>
+      <div className="chat-composer">
+        <div className="chat-input">
+          <button type="button" className="composer-attach" disabled aria-label="Attach a file"><Icon name="attach" /></button>
+          <textarea disabled placeholder="Message" rows={1} />
+          <button className="chat-send" type="button" disabled aria-label="Send"><Icon name="send" size={24} /></button>
+        </div>
+      </div>
+    </section>
+  )
+  return <LearningSpace preview content={{programs, selected_program_id:selected}} onSelectProgram={setSelected} identity={{name:'Layout preview'}} coach={coach} />
 }
 createRoot(document.getElementById('app')!).render(<Preview />)

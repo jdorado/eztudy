@@ -84,21 +84,7 @@
 .reader-navigation { display:flex; align-items:center; justify-content:space-between; margin-top:24px; }
 .reader-next { display:grid; place-items:center; width:44px; height:44px; padding:0; border:1px solid #d5dcef; border-radius:50%; color:#fff; background:#234cdd; box-shadow:0 5px 12px rgba(35,76,221,.16); }
 .focus-coach-panel { overflow:hidden; }
-.focus-coach-panel .chat-shell { width:100%; max-width:none; height:100%; margin:0; grid-template-rows:minmax(0,1fr) auto; }
-.focus-coach-panel .assistant-message { padding:14px 16px; border:1px solid #dce5f2; border-radius:18px; width:fit-content; max-width:min(80%,800px); }
-.focus-coach-panel .user-message { max-width:min(80%,800px); }
-.focus-coach-panel .chat-empty { max-width:640px; margin-left:0; }
-.focus-coach-panel .user-message { background:#e7f0ff; }
-.focus-coach-panel .chat-composer { border:0; }
-.composer-file-input { display:none; }
-.attachment-draft { display:flex; align-items:center; gap:10px; width:fit-content; max-width:100%; margin:0 0 10px 58px; padding:8px 10px; border:1px solid #dce5f2; border-radius:12px; color:#52617a; background:#f7f9fd; }
-.attachment-draft > .icon { flex:0 0 auto; color:#315cf4; }
-.attachment-draft > span { display:grid; min-width:0; gap:2px; }
-.attachment-draft strong { overflow:hidden; color:#15213a; font-size:12px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
-.attachment-draft small { color:#7b879a; font-size:10px; }
-.attachment-draft button { padding:4px 6px; border:0; color:#65728e; background:transparent; font-size:11px; }
-.message-attachment { display:flex; align-items:center; gap:6px; max-width:100%; margin-top:8px; padding:6px 0 0; border:0; border-top:1px solid rgba(35,76,221,.14); color:#3154bf; background:transparent; font-size:11px; text-align:left; overflow-wrap:anywhere; }
-.message-attachment .icon { flex:0 0 auto; }
+.focus-coach-panel .chat-window { width:100%; max-width:none; height:100%; margin:0; }
 .content-notice, .preview-banner { flex-shrink:0; padding:9px 16px; color:#6b4a00; background:#fff3ce; font-size:12px; text-align:center; }
 @media(min-width:760px) {
   .focus-shell { max-width:1440px; grid-template-rows:106px minmax(0,1fr); }
@@ -106,16 +92,8 @@
   .focus-header { padding-top:6px; }
   .timeline-outcome { max-width:65ch; }
   .element-screen { width:100%; }
-  .focus-coach-panel .chat-messages { padding-right:clamp(24px,5vw,72px); padding-left:clamp(24px,5vw,72px); }
-  .focus-coach-panel .chat-composer { padding-right:clamp(24px,5vw,72px); padding-left:clamp(24px,5vw,72px); }
   .timeline-row { padding-right:44px; }
   .focus-profile { width:min(calc(100% - 56px),800px); max-height:calc(100dvh - 56px); margin:auto; border-radius:22px; }
   .profile-content { padding:28px 32px; }
 }
-/* Coach pill composer, using the authenticated send/retry path. */
-.focus-coach-panel .composer-row textarea { min-height:58px; padding:18px 20px; border:0; border-radius:28px; background:#edf1f7; resize:none; line-height:1.35; }
-.focus-coach-panel .composer-row textarea:focus-visible { outline:2px solid #b9c9f5; outline-offset:0; }
-.focus-coach-panel .composer-row button[type='submit'] { display:grid; place-items:center; flex:0 0 58px; width:58px; height:58px; padding:0; border-radius:50%; box-shadow:0 14px 30px rgba(35,76,221,.18); }
-.focus-coach-panel .composer-row .composer-attach { display:grid; place-items:center; flex:0 0 48px; width:48px; height:48px; margin-bottom:5px; padding:0; border:1px solid #dce5f2; border-radius:50%; color:#315cf4; background:#f2f6fc; box-shadow:none; }
-.focus-coach-panel .composer-row .composer-attach:hover { border-color:#c4d2eb; background:#e7efff; }
-.focus-coach-panel .composer-row .composer-attach:disabled { color:#8d99aa; background:#f2f4f7; }
+

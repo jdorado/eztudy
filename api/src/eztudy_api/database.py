@@ -34,7 +34,6 @@ def initialize() -> None:
     # admission from ever creating a second canonical account.
     accounts.create_index("singleton", unique=True)
     accounts.create_index("tenant_id", unique=True)
-    database.chat_turns.create_index([("tenant_id", 1), ("created_at", 1)])
 
 
 def account_for(subject: str) -> dict:
