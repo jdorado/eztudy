@@ -14,6 +14,7 @@ from eztudy_publishing.schema import validate, revision
 
 router = APIRouter(prefix='/api/content')
 programs = database.programs
+item_progress = database.item_progress
 credentials = database.publication_credentials
 MAX_PUBLICATION_BODY_BYTES = 2_000_000
 MAX_SELECTION_BODY_BYTES = 4_096
@@ -28,6 +29,11 @@ class Publication(BaseModel):
 class Selection(BaseModel):
     model_config = ConfigDict(extra='forbid')
     program_id: str = Field(min_length=1, max_length=200)
+
+
+class Completion(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    completed: bool
 
 
 def publisher(authorization: str = Header(default='')):
@@ -161,8 +167,12 @@ async def publish_route(request: Request, grant=Depends(publisher)):
 
 def view(account):
     records = list(programs.find({'tenant_id': account['tenant_id']}, {'program': 1, 'receipt': 1}).sort('program_id', 1))
+    selected = account.get('selected_program_id')
+    completed = item_progress.find({'tenant_id': account['tenant_id'], 'account_id': account['id'],
+                                    'program_id': selected}, {'_id': 0, 'item_id': 1}) if selected else []
     return {'programs': [record['program'] for record in records],
             'selected_program_id': account.get('selected_program_id'),
+            'completed_item_ids': [record['item_id'] for record in completed],
             'receipts': [record['receipt'] for record in records]}
 
 
@@ -184,3 +194,22 @@ def select(selection: Selection, subject: str):
 async def select_route(request: Request, subject: str = Depends(authenticated_user)):
     selection = await selection_from(request)
     return await run_in_threadpool(select, selection, subject)
+
+
+@router.post('/programs/{program_id}/items/{item_id}/completion')
+def set_completion(program_id: str, item_id: str, completion: Completion, response: Response,
+                   subject: str = Depends(authenticated_user)):
+    response.headers['Cache-Control'] = 'no-store'
+    account = account_for(subject)
+    if account.get('selected_program_id') != program_id:
+        raise HTTPException(409, 'Select this Program before changing completion.')
+    record = programs.find_one({'_id': account['tenant_id'] + ':' + program_id})
+    if not record or not any(item['id'] == item_id for item in record['program']['items']):
+        raise HTTPException(404, 'Item not found in the selected Program.')
+    key = ':'.join((account['tenant_id'], account['id'], program_id, item_id))
+    if completion.completed:
+        item_progress.update_one({'_id': key}, {'$set': {'tenant_id': account['tenant_id'],
+            'account_id': account['id'], 'program_id': program_id, 'item_id': item_id}}, upsert=True)
+    else:
+        item_progress.delete_one({'_id': key})
+    return {'item_id': item_id, 'completed': completion.completed}

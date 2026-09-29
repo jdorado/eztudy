@@ -3,7 +3,7 @@ import asyncio
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 from eztudy_api import content
 from eztudy_publishing.schema import compile_program, revision, validate
 
@@ -112,5 +112,26 @@ class PublicationTests(unittest.TestCase):
             candidate = copy.deepcopy(self.program)
             candidate['items'][0]['content']['markdown'] = body
             with self.assertRaises(ValueError): validate(candidate)
+
+    def test_completion_is_scoped_to_selected_published_item(self):
+        account = {'id':'account', 'tenant_id':'tenant', 'selected_program_id':self.program['id']}
+        progress = MagicMock()
+        with patch.object(content, 'account_for', return_value=account), patch.object(content, 'item_progress', progress):
+            self.store.find_one.return_value = {'program':self.program}
+            item_id = self.program['items'][0]['id']
+            content.set_completion(self.program['id'], item_id, content.Completion(completed=True), Response(), 'subject')
+            self.assertEqual(progress.update_one.call_args.args[0]['_id'], f'tenant:account:{self.program["id"]}:{item_id}')
+            content.set_completion(self.program['id'], item_id, content.Completion(completed=False), Response(), 'subject')
+            progress.delete_one.assert_called_once()
+            for program_id, candidate_id, status in [('other',item_id,409), (self.program['id'],'missing',404)]:
+                with self.assertRaises(HTTPException) as raised:
+                    content.set_completion(program_id, candidate_id, content.Completion(completed=True), Response(), 'subject')
+                self.assertEqual(raised.exception.status_code,status)
+            self.assertEqual(progress.update_one.call_count,1)
+            self.store.find.return_value.sort.return_value = [{'program':self.program, 'receipt':{}}]
+            progress.find.return_value = [{'item_id':item_id}]
+            self.assertEqual(content.view(account)['completed_item_ids'], [item_id])
+            self.assertEqual(progress.find.call_args.args[0], {'tenant_id':'tenant', 'account_id':'account',
+                                                               'program_id':self.program['id']})
 
 if __name__ == '__main__': unittest.main()

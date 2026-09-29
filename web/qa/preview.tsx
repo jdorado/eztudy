@@ -62,6 +62,7 @@ The structure of the input changes which procedures are available.`},provenance:
 },{id:'preview-observation',title:'The art of noticing',purpose:'Describe an observation before explaining it.',items:[]}]
 function Preview() {
   const [selected, setSelected] = useState(programs[0].id)
+  const [completed, setCompleted] = useState<string[]>([])
   const coach = (
     <section className="chat-window" aria-label="Coach preview">
       <div className="chat-body">
@@ -86,6 +87,8 @@ function Preview() {
       </div>
     </section>
   )
-  return <LearningSpace preview content={{programs, selected_program_id:selected}} onSelectProgram={setSelected} identity={{name:'Layout preview'}} coach={coach} />
+  return <LearningSpace preview content={{programs, selected_program_id:selected, completed_item_ids:completed}} onSelectProgram={id => {setSelected(id); setCompleted([])}}
+    onSetCompletion={async (_programId, itemId, value) => setCompleted(current => value ? [...current, itemId] : current.filter(id => id !== itemId))}
+    identity={{name:'Layout preview'}} coach={coach} />
 }
 createRoot(document.getElementById('app')!).render(<Preview />)

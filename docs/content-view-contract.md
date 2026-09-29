@@ -8,6 +8,7 @@ schema or a browser-owned learner store.
 ContentView
   programs: Program[]
   selected_program_id: string | null
+  completed_item_ids: string[]     # selected Program, canonical learner progress
 
 Program
   id: stable string
@@ -25,10 +26,19 @@ Item
 ```
 
 Only referenced Items belong in `Program.items`; drafts are never included.
+The first tag is the optional timeline section label. Consecutive Items sharing
+it appear beneath one visible heading (for example, `week-01` displays as
+“Week 1”). Untagged Items remain unlabelled. A repeated tag later in the sequence
+starts another section; grouping never sorts, merges distant Items, changes
+navigation order, or creates a parent entity. Other tags remain visible in the
+reader. Authors choose the labels and cadence; the frontend does not schedule
+weeks or generate content.
 `session-1`, `foundations` and `video` are labels, never routing entities or
-renderer instructions. Only declared supported content selects rendering.
+content-type instructions. Only declared supported content selects rendering.
 No completion/current-position state is invented from array order or opening
-an Item. Reading and next/back navigation do not mutate learner progress.
+an Item. Reading and next/back navigation do not mutate learner progress. The
+learner explicitly marks an Item complete or incomplete through the authenticated
+API; the response view reads that state from the canonical database.
 
 An authenticated API response supplies this view, resolving both ownership
 and selected Program server-side. Selection must be persisted by that API before

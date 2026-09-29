@@ -42,7 +42,23 @@ export function PublishedSpace({identity, onSignOut}: {
     catch (failure) {setError((failure as Error).message)}
     finally {busy.current = false; setSelecting(false)}
   }
+  async function setCompletion(programId: string, itemId: string, completed: boolean) {
+    await reading.current?.catch(() => {})
+    busy.current = true
+    try {
+      const token = await getAccessToken()
+      if (!token) throw new Error('Please sign in again.')
+      const response = await fetch(apiUrl(`/api/content/programs/${encodeURIComponent(programId)}/items/${encodeURIComponent(itemId)}/completion`), {
+        method: 'POST', cache: 'no-store',
+        headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({completed}),
+      })
+      if (!response.ok) throw new Error('Completion could not be saved. Please try again.')
+      setContent(await request())
+      setError('')
+    } finally { busy.current = false }
+  }
   if (!content || selecting) return <main className="timeline-empty"><p className="status" role="status">{error || (selecting ? 'Opening Program…' : 'Opening your learning space…')}</p>{error && <button onClick={() => void refresh()}>Try again</button>}</main>
-  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)}
+  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion}
     coach={itemId => <Chat key={content.selected_program_id ?? 'general'} programId={content.selected_program_id} itemId={itemId} />} />
 }
