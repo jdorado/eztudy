@@ -17,6 +17,7 @@ done
 
 if rg -n \
   --hidden \
+  --glob '!.git' \
   --glob '!.git/**' \
   --glob '!**/node_modules/**' \
   --glob '!**/.venv/**' \

@@ -6,13 +6,14 @@ Program is in `examples/first-principles/`. JSON metadata between `---` delimite
 keeps the first contract deterministic without a separate YAML/compiler hierarchy.
 
 After `cd api && uv sync --locked`, the `eztudy` entry point is available through
-`uv run eztudy`. Both operations require an authorized publisher connection:
+`uv run eztudy`. All operations require an authorized publisher connection:
 
 ```sh
 export EZTUDY_API_URL=https://your-api.example
 export EZTUDY_TOKEN_FILE=/private/eztudy-publisher-token
 uv run eztudy check /path/to/program
 uv run eztudy publish /path/to/program
+uv run eztudy show your-program-id
 ```
 
 Check is read-only but validates server-side permissions as well as source shape.
@@ -38,6 +39,8 @@ API operations:
 
 - `POST /api/content/check`, `POST /api/content/publish`: publisher credential;
   body `{program, expected_revision}`.
+- `GET /api/content/published` and `/published/{program_id}`: publisher credential;
+  only Programs granted to that credential.
 - `GET /api/content`: Privy token; canonical Programs, selection and receipts.
 - `POST /api/content/selection`: Privy token; body `{program_id}`; owned Program only.
 - Chat reads/submissions carry the selected `program_id`; stale selection fails

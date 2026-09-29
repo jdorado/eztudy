@@ -70,6 +70,34 @@ class SchemaContractTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "HTML and media"):
                     validate(valid_program(body))
 
+    def test_media_roundtrip_and_invalid_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'items').mkdir()
+            kinds = ['video', 'podcast', 'movie']
+            (root / 'program.md').write_text('---\n' + json.dumps({
+                'id': 'foundations', 'title': 'Mixed week',
+                'items': [f'items/{kind}.md' for kind in kinds],
+            }) + '\n---\nExplore a theme through different media.')
+            for kind in kinds:
+                item = valid_program()['items'][0]
+                del item['content']
+                item.update(id=kind, type=kind, url=f'https://example.org/{kind}', tags=['week-01'])
+                (root / 'items' / f'{kind}.md').write_text('---\n' + json.dumps(item) + '\n---\nOriginal learning notes.')
+            program = compile_program(root)
+        self.assertEqual([item['content']['type'] for item in program['items']], kinds)
+        self.assertEqual([item['content']['url'] for item in program['items']], [f'https://example.org/{kind}' for kind in kinds])
+        self.assertTrue(all(item['content']['markdown'] == 'Original learning notes.' for item in program['items']))
+        for url in ['javascript:alert(1)', 'http://example.org/watch', '//example.org/watch',
+                    'https:///watch', 'https://user:secret@example.org/watch',
+                    'https://example.org/\nwatch', 'https://example.org\\@evil.test', 'https://example.org:bad/']:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                program['items'][0]['content']['url'] = url
+                validate(program)
+        del program['items'][0]['content']['url']
+        with self.assertRaises(ValueError):
+            validate(program)
+
     def test_revision_is_stable_for_same_canonical_program(self):
         program = valid_program()
         self.assertEqual(revision(program), revision(json.loads(json.dumps(program))))
@@ -85,6 +113,8 @@ class SchemaContractTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("check", result.stdout)
         self.assertIn("publish", result.stdout)
+        self.assertIn("list", result.stdout)
+        self.assertIn("show", result.stdout)
 
 
 if __name__ == "__main__":

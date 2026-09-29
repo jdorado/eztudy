@@ -68,6 +68,9 @@
 .element-header { margin:20px 0 30px; padding-bottom:30px; border-bottom:1px solid #edf1f6; }
 .element-header h1 { margin:14px 0 20px; color:#15213a; font-size:clamp(32px,5vw,48px); letter-spacing:-.045em; line-height:1.06; }
 .element-purpose { color:#63708a; font-size:14px; line-height:1.72; }
+.media-resource { display:grid; gap:10px; margin-bottom:28px; padding:18px; border:1px solid #dfe5ef; border-radius:12px; background:#f7f9fd; }
+.media-resource a { display:inline-flex; align-items:center; gap:8px; width:fit-content; min-height:44px; color:#234cdd; font-weight:650; text-underline-offset:3px; }
+.media-resource span { color:#63708a; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
 .markdown-content { position:relative; color:#43526b; }
 .markdown-content p, .markdown-content li { font-size:16px; line-height:1.72; }
 .markdown-content .lead { font-size:18px; line-height:1.65; }
@@ -96,4 +99,3 @@
   .focus-profile { width:min(calc(100% - 56px),800px); max-height:calc(100dvh - 56px); margin:auto; border-radius:22px; }
   .profile-content { padding:28px 32px; }
 }
-

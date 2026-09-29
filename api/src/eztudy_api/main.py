@@ -35,7 +35,7 @@ def configured_cors_origins(value: str) -> list[str]:
     return origins
 
 
-app = FastAPI(title="Eztudy API", version="0.1.2", lifespan=lifespan)
+app = FastAPI(title="Eztudy API", version="0.1.4", lifespan=lifespan)
 cors_origins = configured_cors_origins(os.environ.get("EZTUDY_CORS_ORIGINS", ""))
 if cors_origins:
     app.add_middleware(

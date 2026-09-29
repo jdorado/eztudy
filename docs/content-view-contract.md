@@ -32,7 +32,7 @@ an Item. Reading and next/back navigation do not mutate learner progress.
 
 An authenticated API response supplies this view, resolving both ownership
 and selected Program server-side. Selection must be persisted by that API before
-replacing the view and changing the selected Program's chat binding/transcript.
+replacing the view and changing the selected Program's chat scope.
 The present component callback is a presentation seam, not authority. Stable
 publication revision and receipt metadata must accompany canonical persistence;
 they are not fabricated by this UI. In-progress selection and failed reads must

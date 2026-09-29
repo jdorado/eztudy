@@ -3,9 +3,21 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from urllib.parse import urlsplit
 
 MAX_BYTES = 1_000_000
 ID = re.compile(r"[a-z][a-z0-9-]{0,79}\Z")
+MEDIA_TYPES = {'video', 'podcast', 'movie'}
+
+
+def media_url(value):
+    url = string(value, 'Media URL', 2000)
+    parsed = urlsplit(url)
+    if (parsed.scheme != 'https' or not parsed.hostname or parsed.username is not None
+            or parsed.password is not None or re.search(r'[\s\\\x00-\x1f\x7f]', url)):
+        raise ValueError('Media URLs must use HTTPS with a host and no credentials or whitespace')
+    # Accessing port also rejects malformed authorities before publication.
+    parsed.port
 
 
 def fields(value, required):
@@ -47,11 +59,15 @@ def validate(program):
             string(tag, 'tag', 80)
         if len(set(tags)) != len(tags):
             raise ValueError('Duplicate tag')
-        fields(item['content'], ['type', 'markdown'])
-        if item['content']['type'] != 'markdown':
-            raise ValueError('Only markdown content is supported')
-        body = string(item['content']['markdown'], 'Markdown body', 100000)
-        # Raw HTML, media and executable embeds are outside the Markdown-only contract.
+        content = item['content']
+        kind = content.get('type') if isinstance(content, dict) else None
+        if kind not in ('markdown', 'video', 'podcast', 'movie'):
+            raise ValueError('Supported content types: markdown, video, podcast, movie')
+        fields(content, ['type', 'markdown'] + (['url'] if kind in MEDIA_TYPES else []))
+        if kind in MEDIA_TYPES:
+            media_url(content['url'])
+        body = string(content['markdown'], 'Markdown body', 100000)
+        # Media use declared links; Markdown never executes HTML or embeds.
         if re.search(r'<\s*/?\s*[a-zA-Z!]|!\[', body):
             raise ValueError('HTML and media are not supported')
         for url in re.findall(r'\]\(([^\s)]+)', body):
@@ -118,7 +134,10 @@ def compile_program(directory):
         if path.is_symlink() or path.parent.is_symlink() or not path.resolve(strict=True).is_relative_to(root):
             raise ValueError('Item reference escapes Program directory')
         metadata, body = document(path)
-        fields(metadata, ['id', 'title', 'purpose', 'tags', 'type', 'provenance'])
+        kind = metadata.get('type') if isinstance(metadata, dict) else None
+        is_media = isinstance(kind, str) and kind in MEDIA_TYPES
+        fields(metadata, ['id', 'title', 'purpose', 'tags', 'type', 'provenance'] + (['url'] if is_media else []))
         items.append({key: metadata[key] for key in ['id', 'title', 'purpose', 'tags', 'provenance']} |
-                     {'content': {'type': metadata['type'], 'markdown': body}})
+                     {'content': {'type': metadata['type'], 'markdown': body} |
+                      ({'url': metadata['url']} if is_media else {})})
     return validate({'id': meta['id'], 'title': meta['title'], 'purpose': purpose, 'items': items})

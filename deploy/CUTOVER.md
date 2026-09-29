@@ -18,7 +18,7 @@ On staging, verify:
 1. API and Ez health checks succeed from their real network boundaries.
 2. The allowlisted owner signs in, reloads, signs out, and signs back in to the same
    canonical account and tenant.
-3. Two related Coach messages preserve native context and survive a page reload.
+3. Two related Coach messages preserve native context; agent replies reload from Ez.
 4. A native agent authors Markdown, uses the installed Eztudy CLI, receives a
    revision-matching receipt, and the authenticated UI renders that exact revision.
 5. Cross-account reads, writes, run access, and cancellation are denied before any

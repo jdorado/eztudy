@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
 import { MarkdownContent } from './MarkdownContent'
 import type { ContentView } from './content'
+import { contentLabels } from './content'
 import './learning.css'
 
 /** Presentation built from the project-owned TimelineScreen and shared element shell.
@@ -57,11 +58,15 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
         <div ref={panel} className="focus-panel" hidden={tab !== 'timeline'}>
           {item && program ? <article className="element-screen">
             <div className="reader-toolbar"><button className="focus-back" onClick={closeReader}><Icon name="left" size={14} />Back to Timeline</button></div>
-            <header className="element-header"><p className="eyebrow">Readout</p>
+            <header className="element-header"><p className="eyebrow">{contentLabels[item.content.type].label}</p>
               <h1 tabIndex={-1}>{item.title}</h1><p className="element-purpose">{item.purpose}</p>
               {item.tags.length > 0 && <ul className="item-tags" aria-label="Tags">{item.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>}
             </header>
-            {item.content.type === 'markdown' ? <div className="media-reading"><MarkdownContent markdown={item.content.markdown} /></div> : <p role="alert">This content type is not supported.</p>}
+            {item.content.type !== 'markdown' && <div className="media-resource">
+              <a href={item.content.url} target="_blank" rel="noreferrer">{contentLabels[item.content.type].link} <Icon name="right" size={16} /></a>
+              <span>Opens on {new URL(item.content.url).hostname}. {item.content.type === 'movie' ? 'Availability and access vary by region.' : 'Opens in a new tab.'}</span>
+            </div>}
+            <div className="media-reading"><MarkdownContent markdown={item.content.markdown} /></div>
             <aside className="item-provenance" aria-label="Provenance"><p>{item.provenance.text}</p>{item.provenance.sources.length > 0 && <ul>{item.provenance.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul>}</aside>
             <nav className="reader-navigation" aria-label="Item navigation">
               <button className="focus-back" onClick={closeReader}>Back to Timeline</button>
@@ -70,10 +75,10 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
           </article> : program?.items.length ? <section className="timeline-screen" aria-label="Your learning timeline">
             <p className="program-purpose">{program.purpose}</p>
             <ol className="timeline-list">{program.items.map((value, index) => <li key={value.id} className="timeline-row">
-              <button className="timeline-card" onClick={() => setItemId(value.id)} aria-label={`Read: ${value.title}`}>
+              <button className="timeline-card" onClick={() => setItemId(value.id)} aria-label={`${contentLabels[value.content.type].action}: ${value.title}`}>
                 <span className="timeline-node" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                <span className="timeline-card-copy"><span className="timeline-meta">Readout{value.tags.length ? ` · ${value.tags.join(' · ')}` : ''}</span><strong>{value.title}</strong><span className="timeline-outcome">{value.purpose}</span></span>
-                <span className="timeline-state">Read <Icon name="right" size={12} /></span>
+                <span className="timeline-card-copy"><span className="timeline-meta">{contentLabels[value.content.type].label}{value.tags.length ? ` · ${value.tags.join(' · ')}` : ''}</span><strong>{value.title}</strong><span className="timeline-outcome">{value.purpose}</span></span>
+                <span className="timeline-state">{contentLabels[value.content.type].action} <Icon name="right" size={12} /></span>
               </button>
             </li>)}<li className="timeline-add-row">
               <button className="timeline-add-item" onClick={() => setTab('coach')} aria-label="Ask Coach for the next item">
@@ -81,7 +86,7 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
                 <span>Next item</span>
               </button>
             </li></ol>
-          </section> : <section className="timeline-empty"><p className="eyebrow">Timeline</p><h1>Your next idea starts here.</h1><p>{program ? 'This Program has no published Items.' : 'No published Programs yet.'} Your published readouts will appear here in order.</p><button className="empty-coach" onClick={() => setTab('coach')}>Open Coach <Icon name="right" size={16} /></button></section>}
+          </section> : <section className="timeline-empty"><p className="eyebrow">Timeline</p><h1>Your next idea starts here.</h1><p>{program ? 'This Program has no published Items.' : 'No published Programs yet.'} Your published Items will appear here in order.</p><button className="empty-coach" onClick={() => setTab('coach')}>Open Coach <Icon name="right" size={16} /></button></section>}
         </div>
         <div className="focus-panel focus-coach-panel" hidden={tab !== 'coach'}>{typeof coach === 'function' ? coach(item?.id ?? null) : coach}</div>
       </main>

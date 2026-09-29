@@ -1,4 +1,30 @@
-# Standard Ez owner chat and plugins
+# Deploy the learning app
+
+The frontend and canonical API work without a Coach connection. Build the
+current API from this repository; a healthy legacy service is not a compatible
+backend. The frontend requires `POST /api/account` and `GET /api/content`.
+
+For an API-only deployment, keep the existing canonical MongoDB database and
+Privy app/owner configuration in a private environment file. Set
+`EZTUDY_CORS_ORIGINS` to the exact frontend origin. Then run:
+
+```sh
+COMPOSE_PROJECT_NAME=ezstudy-app API_IMAGE=ezstudy-api:YOUR_COMMIT \
+  API_ENV_FILE=/private/api.env API_PORT=8111 \
+  docker compose -f deploy/compose.api.yaml up -d --build --wait
+```
+
+Terminate HTTPS at the reverse proxy and route the frontend's configured
+`VITE_API_BASE_URL` to this API. Before switching a live route, verify
+`GET /api/health` returns 200, unauthenticated `POST /api/account` returns 401
+(not 404), and the frontend origin passes the CORS preflight. Then verify an
+authenticated sign-in and the expected published Items after reload. Preserve
+the prior route/image for rollback. See the [cutover runbook](CUTOVER.md).
+
+This Compose file does not provision Ez, mount its private state, or enable
+Coach. Use the optional integration below when a Coach connection is wanted.
+
+## Standard Ez owner chat and plugins
 
 Use an Ez revision containing channel-independent owner registration and the
 standard application-command wrapper. Build its ordinary `runtime` Docker target
@@ -80,9 +106,9 @@ Configure exactly one intended Privy subject. Set `API_UID` and
 non-symlink files with no group/world permission bits.
 
 The API verifies Privy and Ez registration, forwards literal text using
-`followOwner:true`, and persists Ez's replies, including native scheduled replies.
-It never schedules work or selects a native session. Repeated admission reuses
-its request key and the opaque run ID returned by Ez.
+`followOwner:true`, and reads Ez's replies live, including native scheduled
+replies; it keeps no transcript. It never schedules work or selects a native
+session. Repeated admission reuses its request key and the opaque run ID from Ez.
 
 Additional trusted channels register separate tokens against the same owner.
 Rotate a token with `--rotate` to preserve bindings and native continuity. Telegram

@@ -1,6 +1,6 @@
 [project]
 name = "eztudy-publishing"
-version = "0.1.2"
+version = "0.1.4"
 requires-python = ">=3.11"
 description = "Deterministic Markdown check and publication"
 license = "MIT"

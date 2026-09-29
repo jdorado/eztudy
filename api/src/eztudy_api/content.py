@@ -42,7 +42,29 @@ def publisher(authorization: str = Header(default='')):
 
 def authorized_program(grant, program_id):
     if 'content:publish' not in grant.get('scopes', []) or program_id not in grant.get('program_ids', []):
-        raise HTTPException(403, 'This credential cannot publish that Program.')
+        raise HTTPException(403, 'This credential cannot access that Program.')
+
+
+@router.get('/published')
+def published(grant=Depends(publisher)):
+    """The agent sees only Programs allowed by its installed credential."""
+    if 'content:publish' not in grant.get('scopes', []):
+        raise HTTPException(403, 'This credential cannot read Programs.')
+    allowed = grant.get('program_ids', [])
+    records = programs.find({'tenant_id': grant['tenant_id'], 'program_id': {'$in': allowed}},
+                            {'_id': 0, 'program': 1, 'receipt': 1}).sort('program_id', 1)
+    return {'programs': [{'id': record['program']['id'], 'title': record['program']['title'],
+                          'receipt': record['receipt']} for record in records]}
+
+
+@router.get('/published/{program_id}')
+def published_program(program_id: str, grant=Depends(publisher)):
+    authorized_program(grant, program_id)
+    record = programs.find_one({'tenant_id': grant['tenant_id'], 'program_id': program_id},
+                               {'_id': 0, 'program': 1, 'receipt': 1})
+    if not record:
+        raise HTTPException(404, 'Program is not published.')
+    return record
 
 
 def checked(payload, grant):

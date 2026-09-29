@@ -5,15 +5,17 @@ import { usePrivy } from '@privy-io/react-auth'
 import { apiUrl } from './config'
 
 interface Turn {
-  request_id: string
-  text: string
+  run_id: string
   status: string
   messages: {id: string; text: string}[]
-  attachment?: {name: string; size: number}
-  created_at: string
-  item_id?: string | null
 }
-const active = (turn: Turn) => !['completed', 'failed', 'cancelled'].includes(turn.status)
+interface LocalMessage {
+  request_id: string
+  text: string
+  attachment?: {name: string; size: number}
+  attachmentData?: string
+}
+const active = (status: string) => !['completed', 'failed', 'cancelled'].includes(status)
 
 function formatElapsed(seconds: number) {
   const whole = Math.max(0, Math.floor(seconds))
@@ -21,8 +23,8 @@ function formatElapsed(seconds: number) {
   return minutes > 0 ? `${minutes}m ${String(whole % 60).padStart(2, '0')}s` : `${whole}s`
 }
 
-function ThinkingStatus({ startedAt }: { startedAt?: string }) {
-  const origin = useRef((startedAt && Number.isFinite(Date.parse(startedAt)) ? Date.parse(startedAt) : Date.now()))
+function ThinkingStatus({ startedAt }: { startedAt?: number }) {
+  const origin = useRef(startedAt && Number.isFinite(startedAt) ? startedAt : Date.now())
   const [elapsed, setElapsed] = useState(() => Math.max(0, Math.floor((Date.now() - origin.current) / 1000)))
   useEffect(() => {
     const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - origin.current) / 1000)))
@@ -39,9 +41,19 @@ function ThinkingStatus({ startedAt }: { startedAt?: string }) {
   )
 }
 
+function UserMessage({ message }: { message: LocalMessage }) {
+  return <div className="message-stack user-stack">
+    <div className="message user">{message.text}
+      {message.attachment && <span className="message-attachment"><Icon name="attach" size={14} />{message.attachment.name} · {Math.ceil(message.attachment.size / 1024)} KB</span>}
+    </div>
+  </div>
+}
+
 export function Chat({ programId, itemId }: { programId: string | null; itemId: string | null }) {
   const { getAccessToken } = usePrivy()
   const [turns, setTurns] = useState<Turn[]>([])
+  const [sent, setSent] = useState<Record<string, LocalMessage>>({})
+  const [pending, setPending] = useState<(LocalMessage & {started_at: number}) | null>(null)
   const [draft, setDraft] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -49,7 +61,6 @@ export function Chat({ programId, itemId }: { programId: string | null; itemId: 
   const [sending, setSending] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [showScrollToBottom, setShowScrollToBottom] = useState(false)
-  const pending = useRef<{request_id: string; text: string; item_id: string | null; program_id: string | null; attachment?: {name: string; data: string}} | null>(null)
   const chatBody = useRef<HTMLDivElement>(null)
   const sentOnTouch = useRef(false)
   const request = useCallback(async (path: string, payload?: object) => {
@@ -88,10 +99,10 @@ export function Chat({ programId, itemId }: { programId: string | null; itemId: 
   }, [refresh])
   useEffect(() => {
     setFile(null)
-    pending.current = null
+    setPending(null)
     if (fileInput.current) fileInput.current.value = ''
   }, [programId])
-  const transcriptSize = turns.reduce((count, turn) => count + 1 + turn.messages.length, 0)
+  const transcriptSize = turns.reduce((count, turn) => count + 1 + turn.messages.length, 0) + (pending ? 1 : 0)
   const updateScrollButton = useCallback(() => {
     const node = chatBody.current
     if (!node) { setShowScrollToBottom(false); return }
@@ -106,40 +117,60 @@ export function Chat({ programId, itemId }: { programId: string | null; itemId: 
   }, [])
   useEffect(() => { scrollToLatest('smooth') }, [transcriptSize, scrollToLatest])
 
-  const busy = sending || !!pending.current
+  const busy = sending || !!pending
   const canSend = !busy && loaded && (!!draft.trim() || !!file)
 
-  async function submit(event?: FormEvent, retry?: Turn) {
-    event?.preventDefault()
-    if (sending || (!retry && !draft.trim() && !file)) return
+  async function send(message: LocalMessage) {
     setSending(true); setError('')
     try {
-      if (retry) {
-        await request('/' + retry.request_id + '/retry', {})
-      } else {
-        if (!pending.current) {
-          let attachment
-          if (file) {
-            const data = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve(String(reader.result).split(',')[1])
-              reader.onerror = () => reject(new Error('Could not read this file.'))
-              reader.readAsDataURL(file)
-            })
-            attachment = {name: file.name, data}
-          }
-          pending.current = {request_id: crypto.randomUUID(), text: draft, item_id: itemId, program_id: programId, ...(attachment ? {attachment} : {})}
-        }
-        await request('', pending.current)
-      }
-      pending.current = null; setDraft(''); setFile(null)
-      if (fileInput.current) fileInput.current.value = ''
+      const result = await request('', {
+        request_id: message.request_id, text: message.text, program_id: programId, item_id: itemId,
+        ...(message.attachmentData && message.attachment
+          ? {attachment: {name: message.attachment.name, data: message.attachmentData}} : {}),
+      })
+      setSent(previous => ({...previous, [result.run_id]: message}))
+      setPending(null)
       await refresh()
     } catch (failure) {
-      if (failure instanceof Error && 'status' in failure && [413, 422].includes(Number(failure.status))) pending.current = null
+      // Ez never admitted a rejected file or message; drop it. Keep everything else for retry.
+      if (failure instanceof Error && 'status' in failure && [413, 422].includes(Number(failure.status))) setPending(null)
       setError(failure instanceof Error ? failure.message : 'Could not send your message.')
       await refresh().catch(() => {})
     } finally { setSending(false) }
+  }
+
+  async function submit(event?: FormEvent) {
+    event?.preventDefault()
+    if (sending) return
+    if (pending) { await send(pending); return }
+    if (!draft.trim() && !file) return
+    let attachmentData: string | undefined
+    if (file) {
+      try {
+        attachmentData = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result).split(',')[1])
+          reader.onerror = () => reject(new Error('Could not read this file.'))
+          reader.readAsDataURL(file)
+        })
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : 'Could not read this file.')
+        return
+      }
+    }
+    const message: LocalMessage = {
+      request_id: crypto.randomUUID(), text: draft,
+      ...(file ? {attachment: {name: file.name, size: file.size}, attachmentData} : {}),
+    }
+    setPending({...message, started_at: Date.now()})
+    setDraft(''); setFile(null)
+    if (fileInput.current) fileInput.current.value = ''
+    await send(message)
+  }
+
+  async function cancel(turn: Turn) {
+    try { await request('/' + turn.run_id + '/cancel', {}); await refresh() }
+    catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not stop this reply.') }
   }
 
   function sendFromClick() {
@@ -154,51 +185,47 @@ export function Chat({ programId, itemId }: { programId: string | null; itemId: 
     void submit()
   }
 
-  async function download(turn: Turn) {
-    try {
-      const token = await getAccessToken()
-      if (!token) throw new Error('Please sign in again.')
-      const response = await fetch(apiUrl('/api/chat/' + turn.request_id + '/attachment'), {headers: {Authorization: `Bearer ${token}`}, cache: 'no-store'})
-      if (!response.ok) throw new Error('Could not download this attachment.')
-      const url = URL.createObjectURL(await response.blob())
-      const link = document.createElement('a')
-      link.href = url; link.download = turn.attachment!.name; link.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Could not download this attachment.')
-    }
-  }
-
   return <section className="chat-window" aria-label="Coach">
     <div className="chat-body" ref={chatBody} onScroll={updateScrollButton} aria-label="Conversation" aria-live="polite">
-      {!loaded ? <p className="status">Opening your conversation…</p> : turns.length === 0 && <div className="chat-empty message-stack ai-stack">
+      {!loaded ? <p className="status">Opening your conversation…</p> : turns.length === 0 && !pending && <div className="chat-empty message-stack ai-stack">
         <span className="message-avatar" aria-hidden="true">AI</span>
         <div className="message ai"><p>Start a conversation with Coach...</p></div>
       </div>}
-      {turns.map(turn => <div className="chat-turn" key={turn.request_id}>
-        <div className="message-stack user-stack">
-          <div className="message user">{turn.text}
-            {turn.attachment && <button type="button" className="message-attachment" onClick={() => void download(turn)}><Icon name="attach" size={14} />{turn.attachment.name} · {Math.ceil(turn.attachment.size / 1024)} KB</button>}
-          </div>
+      {turns.map(turn => {
+        const message = sent[turn.run_id]
+        return <div className="chat-turn" key={turn.run_id}>
+          {message && <UserMessage message={message} />}
+          {turn.messages.map(reply => <div className="message-stack ai-stack" key={reply.id}>
+            <span className="message-avatar" aria-hidden="true">AI</span>
+            <div className="message ai"><MarkdownContent markdown={reply.text} /></div>
+          </div>)}
+          {active(turn.status) && <div className="message-stack ai-stack">
+            <span className="message-avatar" aria-hidden="true">AI</span>
+            <div className="message ai thinking">
+              <div className="turn-controls">
+                <ThinkingStatus />
+                {message && <button type="button" onClick={() => void cancel(turn)}>Stop</button>}
+              </div>
+            </div>
+          </div>}
+          {['failed', 'cancelled'].includes(turn.status) && <p className="status-detail">{turn.status === 'cancelled' ? 'Stopped.' : 'This reply could not be completed.'}
+            {turn.status === 'failed' && message && <button type="button" disabled={sending} onClick={() => void send(message)}>Retry</button>}
+          </p>}
+          {turn.status === 'completed' && turn.messages.length === 0 && <p className="status-detail">The agent finished without delivering a reply.</p>}
         </div>
-        {turn.messages.map(message => <div className="message-stack ai-stack" key={message.id}>
-          <span className="message-avatar" aria-hidden="true">AI</span>
-          <div className="message ai"><MarkdownContent markdown={message.text} /></div>
-        </div>)}
-        {active(turn) && <div className="message-stack ai-stack">
+      })}
+      {pending && <div className="chat-turn">
+        <UserMessage message={pending} />
+        <div className="message-stack ai-stack">
           <span className="message-avatar" aria-hidden="true">AI</span>
           <div className="message ai thinking">
             <div className="turn-controls">
-              {turn.status === 'submitting' ? <span role="status">Checking submission…</span> : <ThinkingStatus startedAt={turn.created_at} />}
-              {turn.status === 'submitting'
-                ? <button type="button" onClick={() => void submit(undefined, turn)}>Retry</button>
-                : <button type="button" onClick={() => void request('/' + turn.request_id + '/cancel', {}).then(refresh).catch(failure => setError(failure.message))}>Stop</button>}
+              <ThinkingStatus startedAt={pending.started_at} />
+              <button type="button" disabled={sending} onClick={() => void submit()}>Retry</button>
             </div>
           </div>
-        </div>}
-        {['failed', 'cancelled'].includes(turn.status) && <p className="status-detail">{turn.status === 'cancelled' ? 'Stopped.' : 'This reply could not be completed.'}</p>}
-        {turn.status === 'completed' && turn.messages.length === 0 && <p className="status-detail">The agent finished without delivering a reply.</p>}
-      </div>)}
+        </div>
+      </div>}
     </div>
     {showScrollToBottom ? <button className="chat-scroll-bottom" type="button" onClick={() => scrollToLatest()} aria-label="Jump to latest message" title="Jump to latest message"><Icon name="down" /></button> : null}
     <form className="chat-composer" onSubmit={event => void submit(event)}>
@@ -218,7 +245,7 @@ export function Chat({ programId, itemId }: { programId: string | null; itemId: 
           autoCorrect="off" autoCapitalize="off" autoComplete="off" spellCheck={false} enterKeyHint="send"
           onChange={event => setDraft(event.target.value)}
           onKeyDown={event => {if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {event.preventDefault(); if (!busy) void submit()}}} />
-        <button className="chat-send" type="button" onPointerDown={sendFromPointer} onClick={sendFromClick} disabled={!canSend} aria-label={sending ? 'Sending…' : pending.current ? 'Retry' : 'Send'} title="Send"><Icon name="send" size={24} /></button>
+        <button className="chat-send" type="button" onPointerDown={sendFromPointer} onClick={sendFromClick} disabled={!canSend} aria-label={sending ? 'Sending…' : pending ? 'Retry' : 'Send'} title="Send"><Icon name="send" size={24} /></button>
       </div>
     </form>
   </section>

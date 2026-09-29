@@ -2,6 +2,9 @@
 
 A deterministic Docker CLI and authoring skill. No model calls, agent runtime,
 execution queue or content generation. The API uses this same validation package.
+Items support Markdown readouts and video, podcast and movie recommendations
+with HTTPS source links and Markdown learning notes. The frontend labels each
+type and opens media on the source website; no upload or embed is required.
 
 This checkout is private/local QA. `package.json` is marked private, so packing
 the plugin does not authorize npm publication or a public catalog entry.
@@ -25,6 +28,7 @@ source, select tenant and writable Program IDs. Revocation sets the matching
 hashed MongoDB credential record's `revoked` field to true. No API account or
 other credential is usable as a publisher bearer token.
 
+`list` and `show` read only published Programs allowed by the same credential.
 Check is read-only and authenticated. Publish validates again and returns a
 revision-matching receipt. Failures use nonzero exit and JSON stderr. CLI help and
 version work without credentials. HTTPS is required except local QA origins.

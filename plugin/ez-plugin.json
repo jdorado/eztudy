@@ -1,6 +1,6 @@
 {
-  "schemaVersion":1,"id":"eztudy","version":"0.1.2",
-  "description":"Author flat Program/Item Markdown, validate it, and publish authorized readouts to Eztudy. Read the authoring skill before first use.",
+  "schemaVersion":1,"id":"eztudy","version":"0.1.4",
+  "description":"Read/publish Programs with ez eztudy. Markdown, video, podcast and movie Items; media use HTTPS links and notes. One Item per reading or activity; weeks/sessions are shared tags. Read the authoring skill before authoring. Require a publication receipt and canonical show readback.",
   "commands":{"eztudy":{"executable":"bin/eztudy","args":[],"exposure":{"receivesExternalContent":true,"sendsExternally":true,"changesRecords":true,"requiresReview":true}}},
   "skills":["skills/authoring/SKILL.md"]
 }

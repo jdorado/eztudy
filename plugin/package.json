@@ -1,6 +1,6 @@
 {
   "name": "@jc_stack/ez-eztudy",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "private": true,
   "description": "Deterministic Markdown validation and scoped publication for Eztudy",
   "type": "module",

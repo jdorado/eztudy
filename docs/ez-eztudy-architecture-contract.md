@@ -47,7 +47,7 @@ Use the smallest authenticated interface that satisfies it.
 | Owner | Responsibilities |
 | --- | --- |
 | Eztudy FE | Learning UI, sign-in, provisioning status, chat, optional Telegram linking |
-| Eztudy BE | Verify Privy, accounts/grants, tenant mapping, app permissions, canonical state and transcripts |
+| Eztudy BE | Verify Privy, accounts/grants, tenant mapping, app permissions and canonical app state |
 | Ez | Authorization, durable app/channel admission, session binding, scheduling, cancellation, runtime controls, secret isolation, channel delivery and receipts |
 | Native engine | Execution, inference, native sessions, context, tools, goals, delegation and continuation |
 | Plugins | Markdown instructions and documented CLI actions, provider connections and deterministic services |
@@ -110,7 +110,7 @@ FE submits literal request + visible Program/Item reference
   → Ez admits one durable run and binds the native session
   → native engine reads Markdown and calls eztudy CLI
   → API validates scope and persists canonical results
-  → Ez exposes run/output receipts; BE persists UI transcript
+  → Ez exposes run/output receipts; the app reads them live and keeps no transcript
   → FE refreshes the canonical result
 ```
 
@@ -126,17 +126,16 @@ FE submits literal request + visible Program/Item reference
   to native session state without interpreting Programs or learner roles.
 - All app and Telegram turns use Ez. Eztudy has no separate agent runner,
   model-routing layer, conversation engine or competing execution queue.
-- App job/status records and UI transcripts may reference Ez runs. They are
-  projections, not another execution owner. Retrying admission reuses its key.
-- Ez supplies standard scheduling and controls. Instructions may encourage
-  lengthy work to use scheduled tasks or native delegation; the engine decides.
+- The app keeps no job/status record or transcript. It reads Ez run receipts
+  live and retries admission under its original key.
+- Ez supplies standard scheduling and controls; the engine decides.
 - Standard Ez commands and behavior apply across channels. Document capability
   gaps separately; do not replace controls with app-specific transport branches.
 - Application behavior belongs in public or purpose-built private plugin
   instructions and CLI commands. Ez does not enforce a learning workflow.
 - `/goal` is native engine input. Ez does not rewrite objectives or own goals.
-- Quick tutoring is read-only. Explicit authoring requests permit scoped
-  Markdown edits and the protected check/publish flow.
+- Quick tutoring reads canonical content through the plugin. Explicit authoring
+  requests permit scoped Markdown edits and publication through the plugin.
 - Agents use the existing `eztudy` CLI for app operations. Reuse its methods;
   add commands only for a demonstrated missing action. Commands enforce
   authentication, authorization, validation and canonical persistence through
@@ -146,9 +145,10 @@ FE submits literal request + visible Program/Item reference
   permitted when they do not take ownership of agent execution.
 - Markdown/assets are authoring source. Checked, receipt-backed API projections
   are published content. Chat prose or draft files alone never mean published.
-- Identity, grants, learner state, route state and chat remain canonical in the
+- Identity, grants, learner state and route state remain canonical in the
   API/MongoDB database, shared by development and production for an installation.
-  No temporary database backend, browser-local learner store or hardcoded identity.
+  Chat runs remain canonical in Ez. No temporary database backend, browser-local
+  learner store or hardcoded identity.
 
 ## Isolation and plugins
 
@@ -182,7 +182,7 @@ CLI containers and any explicitly shared services. Pooling is deferred.
 | Boundary | Minimum acceptance |
 | --- | --- |
 | 1. App authority + tenant mapping | Verified sign-in resolves one installation, no Telegram required; repeat admission/provisioning creates no duplicate |
-| 2. One generation flow | Explicit request → Ez → Markdown + CLI check/publish → actual session visible in authenticated FE |
+| 2. One generation flow | Explicit request → Ez → Markdown + CLI publish/readback → published content visible in authenticated FE |
 | 3. Isolation | Two tenants produce separate results; cross-tenant reads, writes, session access and cancellation fail; existing delegated-access rules hold |
 | 4. Optional Telegram link | Admin pairs once, a standard command works, unlink revokes access; app remains usable |
 | 5. Execution ownership | App turns exclusively use Ez; no competing runner, queue or model-routing layer |

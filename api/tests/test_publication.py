@@ -31,6 +31,33 @@ class PublicationTests(unittest.TestCase):
             self.assertEqual(raised.exception.status_code, expected)
         self.store.insert_one.assert_not_called(); self.store.replace_one.assert_not_called()
 
+    def test_agent_reads_only_granted_published_programs(self):
+        record = {'program': self.program, 'receipt': {'revision': revision(self.program)}}
+        self.store.find.return_value.sort.return_value = [record]
+        self.store.find_one.return_value = record
+        self.assertEqual(content.published(self.grant)['programs'][0]['id'], self.program['id'])
+        query = self.store.find.call_args.args[0]
+        self.assertEqual(query['tenant_id'], 'tenant')
+        self.assertEqual(query['program_id'], {'$in': ['publishing-qa']})
+        self.assertEqual(content.published_program('publishing-qa', self.grant), record)
+        with self.assertRaises(HTTPException) as raised:
+            content.published_program('other-program', self.grant)
+        self.assertEqual(raised.exception.status_code, 403)
+
+    def test_media_publication_keeps_scope_and_exact_content(self):
+        self.program['items'][0]['content'] = {
+            'type': 'podcast', 'url': 'https://example.org/episode', 'markdown': 'Listen and reflect.',
+        }
+        with self.assertRaises(HTTPException) as raised:
+            content.publish(content.Publication(program=self.program), self.grant | {'program_ids': []})
+        self.assertEqual(raised.exception.status_code, 403)
+        self.store.insert_one.assert_not_called()
+        receipt = content.publish(content.Publication(program=self.program), self.grant)
+        record = self.store.insert_one.call_args.args[0]
+        self.assertEqual(record['tenant_id'], 'tenant')
+        self.assertEqual(record['program'], self.program)
+        self.assertEqual(receipt['revision'], revision(self.program))
+
     def test_repeat_is_noop_and_stale_revision_fails(self):
         digest = revision(self.program)
         self.store.find_one.return_value = {'revision':digest, 'receipt':{'revision':digest}}
