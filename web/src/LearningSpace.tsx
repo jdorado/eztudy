@@ -114,10 +114,12 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               <div className="reader-actions">
                 {onSetCompletion && <button onClick={() => void toggleCompletion()} disabled={completionBusy} aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'} title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'} aria-pressed={isCompleted}><Icon name="check" size={18} /></button>}
                 <button onClick={() => setTab('coach')} aria-label="Ask Coach about Item" title="Ask Coach about Item"><Icon name="ask" size={18} /></button>
-                <button onClick={exportItem} aria-label="Export Item" title="Export Item"><Icon name="export" size={18} /></button>
+                <button className="reader-format-action" onClick={exportItem} aria-label="Download Item notes as Markdown" title="Download Item notes as Markdown">MD</button>
+                {item.reader_url && onExportReaderEpub && <button className="reader-format-action reader-epub-button" onClick={() => void exportReader()} disabled={readerExport?.itemId === item.id && readerExport.busy} aria-label={readerExport?.itemId === item.id && readerExport.busy ? 'Preparing EPUB' : 'Share or download arXiv paper as EPUB'} title="Share or download arXiv paper as EPUB">EPUB</button>}
               </div>
             </div>
             {completionError && <p className="reader-error" role="alert">{completionError}</p>}
+            {readerExport?.itemId === item.id && readerExport.error && <p className="reader-error" role="alert">{readerExport.error}</p>}
             <header className="element-header"><p className="eyebrow">{contentLabels[item.content.type].label}</p>
               <h1 tabIndex={-1}>{item.title}</h1><p className="element-purpose">{item.purpose}</p>
               {item.tags.length > 0 && <ul className="item-tags" aria-label="Tags">{item.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>}
@@ -128,10 +130,6 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
             </div>}
             <div className="media-reading"><MarkdownContent markdown={item.content.markdown} /></div>
             <aside className="item-provenance" aria-label="Provenance"><p>{item.provenance.text}</p>{item.provenance.sources.length > 0 && <ul>{item.provenance.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul>}</aside>
-            {item.reader_url && onExportReaderEpub && <div className="reader-epub-action">
-              <button onClick={() => void exportReader()} disabled={readerExport?.itemId === item.id && readerExport.busy}><Icon name="export" size={16} />{readerExport?.itemId === item.id && readerExport.busy ? 'Preparing EPUB…' : 'Share arXiv paper as EPUB'}</button>
-              {readerExport?.itemId === item.id && readerExport.error && <p className="reader-error" role="alert">{readerExport.error}</p>}
-            </div>}
             <nav className="reader-navigation" aria-label="Item navigation">
               <button className="focus-back" onClick={closeReader}>Back to Timeline</button>
               {program.items[program.items.indexOf(item) + 1] && <button className="reader-next" aria-label="Next Item" onClick={() => setItemId(program.items[program.items.indexOf(item) + 1].id)}><Icon name="right" /></button>}
