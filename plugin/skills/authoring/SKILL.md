@@ -62,6 +62,10 @@ container Items.
 No Session or Course commands. Editing text, tags, and reference order then
 publishing replaces the active revision; removing a reference retains API history.
 Provenance sources, when used, have `title` and HTTP(S) `url`. Do not invent sources.
+For a verified arXiv HTML paper, an optional `"reader_url":"https://arxiv.org/html/2402.08954"`
+on a Markdown Item enables the learner's private EPUB action. Use the exact
+`arxiv.org/html` paper URL; the API fetches it on demand for the signed-in learner
+and retains no converted file. Keep the paper's title and URL in provenance too.
 
 Supported Markdown: paragraphs, `#` through `###` headings, bold/italic,
 inline/fenced code, simple lists, blockquotes and HTTP(S) links. No raw HTML,

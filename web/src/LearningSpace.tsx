@@ -7,13 +7,14 @@ import './learning.css'
 
 /** Presentation built from the project-owned TimelineScreen and shared element shell.
  * No learner store, entity hierarchy or native execution behavior is imported. */
-export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, notice, preview = false }: {
+export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, onExportReaderEpub, notice, preview = false }: {
   content: ContentView
   coach: ReactNode | ((itemId: string | null) => ReactNode)
   identity: { name?: string; email?: string }
   onSignOut?: () => void
   onSelectProgram?: (id: string) => void
   onSetCompletion?: (programId: string, itemId: string, completed: boolean) => Promise<void>
+  onExportReaderEpub?: (programId: string, itemId: string) => Promise<Blob>
   preview?: boolean
   notice?: string
 }) {
@@ -21,6 +22,7 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
   const [itemId, setItemId] = useState<string | null>(null)
   const [completionBusy, setCompletionBusy] = useState(false)
   const [completionError, setCompletionError] = useState('')
+  const [readerExport, setReaderExport] = useState<{itemId: string; busy: boolean; error: string} | null>(null)
   const profile = useRef<HTMLDialogElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const program = content.programs.find(value => value.id === content.selected_program_id)
@@ -60,6 +62,34 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
     catch { setCompletionError('Completion could not be saved. Please try again.') }
     finally { setCompletionBusy(false) }
   }
+  const exportReader = async () => {
+    if (!item?.reader_url || !program || !onExportReaderEpub || (readerExport?.itemId === item.id && readerExport.busy)) return
+    const currentId = item.id
+    setReaderExport({itemId: currentId, busy: true, error: ''})
+    try {
+      const blob = await onExportReaderEpub(program.id, currentId)
+      const filename = `${item.title.replace(/[\\/:*?"<>|]/g, '').trim() || currentId}.epub`
+      const file = new File([blob], filename, {type: 'application/epub+zip'})
+      const shareData = {files: [file], title: item.title}
+      let canShare = !!navigator.share
+      try {if (canShare && navigator.canShare) canShare = navigator.canShare(shareData)}
+      catch {canShare = false}
+      if (canShare) {
+        try {await navigator.share(shareData); return}
+        catch (failure) {if (failure instanceof DOMException && failure.name === 'AbortError') return}
+      }
+      const url = URL.createObjectURL(file)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (failure) {
+      setReaderExport({itemId: currentId, busy: false, error: failure instanceof Error ? failure.message : 'Could not prepare the EPUB.'})
+    } finally {
+      setReaderExport(value => value?.itemId === currentId ? {...value, busy: false} : value)
+    }
+  }
   return <div className="learning-root">
     {notice && <aside className="content-notice" role="alert">{notice}</aside>}
     {preview && <aside className="preview-banner">Layout preview · original sample text · not published account content</aside>}
@@ -98,6 +128,10 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
             </div>}
             <div className="media-reading"><MarkdownContent markdown={item.content.markdown} /></div>
             <aside className="item-provenance" aria-label="Provenance"><p>{item.provenance.text}</p>{item.provenance.sources.length > 0 && <ul>{item.provenance.sources.map(source => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ul>}</aside>
+            {item.reader_url && onExportReaderEpub && <div className="reader-epub-action">
+              <button onClick={() => void exportReader()} disabled={readerExport?.itemId === item.id && readerExport.busy}><Icon name="export" size={16} />{readerExport?.itemId === item.id && readerExport.busy ? 'Preparing EPUB…' : 'Share arXiv paper as EPUB'}</button>
+              {readerExport?.itemId === item.id && readerExport.error && <p className="reader-error" role="alert">{readerExport.error}</p>}
+            </div>}
             <nav className="reader-navigation" aria-label="Item navigation">
               <button className="focus-back" onClick={closeReader}>Back to Timeline</button>
               {program.items[program.items.indexOf(item) + 1] && <button className="reader-next" aria-label="Next Item" onClick={() => setItemId(program.items[program.items.indexOf(item) + 1].id)}><Icon name="right" /></button>}

@@ -58,7 +58,16 @@ export function PublishedSpace({identity, onSignOut}: {
       setError('')
     } finally { busy.current = false }
   }
+  async function exportReaderEpub(programId: string, itemId: string) {
+    const token = await getAccessToken()
+    if (!token) throw new Error('Please sign in again.')
+    const response = await fetch(apiUrl(`/api/content/programs/${encodeURIComponent(programId)}/items/${encodeURIComponent(itemId)}/private-epub`), {
+      cache: 'no-store', headers: {Authorization: `Bearer ${token}`},
+    })
+    if (!response.ok) throw new Error('The arXiv HTML paper could not be prepared as an EPUB right now.')
+    return response.blob()
+  }
   if (!content || selecting) return <main className="timeline-empty"><p className="status" role="status">{error || (selecting ? 'Opening Program…' : 'Opening your learning space…')}</p>{error && <button onClick={() => void refresh()}>Try again</button>}</main>
-  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion}
+  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion} onExportReaderEpub={exportReaderEpub}
     coach={itemId => <Chat key={content.selected_program_id ?? 'general'} programId={content.selected_program_id} itemId={itemId} />} />
 }

@@ -5,6 +5,8 @@ execution queue or content generation. The API uses this same validation package
 Items support Markdown readouts and video, podcast and movie recommendations
 with HTTPS source links and Markdown learning notes. The frontend labels each
 type and opens media on the source website; no upload or embed is required.
+An optional verified `reader_url` on a Markdown Item enables a signed-in,
+on-demand private EPUB from an arXiv HTML paper. The converted file is not stored.
 
 This checkout is private/local QA. `package.json` is marked private, so packing
 the plugin does not authorize npm publication or a public catalog entry.

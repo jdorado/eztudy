@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .auth import authenticated_user
 from .database import account_for, accounts, database
+from .reader_epub import fetch_reader_html, private_reader_epub
 from eztudy_publishing.schema import validate, revision
 
 router = APIRouter(prefix='/api/content')
@@ -213,3 +214,21 @@ def set_completion(program_id: str, item_id: str, completion: Completion, respon
     else:
         item_progress.delete_one({'_id': key})
     return {'item_id': item_id, 'completed': completion.completed}
+
+
+@router.get('/programs/{program_id}/items/{item_id}/private-epub')
+def reader_epub(program_id: str, item_id: str, subject: str = Depends(authenticated_user)):
+    """Give the signed-in learner a private EPUB from a published arXiv HTML source."""
+    account = account_for(subject)
+    record = programs.find_one({'_id': account['tenant_id'] + ':' + program_id})
+    item = next((item for item in (record or {}).get('program', {}).get('items', [])
+                 if item['id'] == item_id), None)
+    if not item or not item.get('reader_url'):
+        raise HTTPException(404, 'No reader EPUB is available for this Item.')
+    try:
+        url = item['reader_url']
+        epub = private_reader_epub(source_html=fetch_reader_html(url), source_url=url, title=item['title'])
+    except ValueError as error:
+        raise HTTPException(502, 'The arXiv HTML paper could not be prepared as an EPUB.') from error
+    return Response(content=epub, media_type='application/epub+zip', headers={
+        'Content-Disposition': f'attachment; filename="{item_id}.epub"', 'Cache-Control': 'no-store'})

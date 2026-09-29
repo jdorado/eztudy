@@ -69,6 +69,9 @@
 .item-provenance p, .item-provenance ul { margin:0; }
 .item-provenance ul { margin-top:8px; padding-left:18px; }
 .item-provenance a { color:#234cdd; }
+.reader-epub-action { margin:18px auto 0; }
+.reader-epub-action button { display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0; border:0; background:transparent; color:#234cdd; font-size:12px; font-weight:650; }
+.reader-epub-action button:disabled { opacity:.5; }
 .element-header { margin:20px 0 30px; padding-bottom:30px; border-bottom:1px solid #edf1f6; }
 .element-header h1 { margin:14px 0 20px; color:#15213a; font-size:clamp(32px,5vw,48px); letter-spacing:-.045em; line-height:1.06; }
 .element-purpose { color:#63708a; font-size:14px; line-height:1.72; }

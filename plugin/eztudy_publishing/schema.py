@@ -10,6 +10,16 @@ ID = re.compile(r"[a-z][a-z0-9-]{0,79}\Z")
 MEDIA_TYPES = {'video', 'podcast', 'movie'}
 
 
+def arxiv_reader_url(value):
+    url = string(value, 'arXiv HTML reader URL', 2000)
+    parsed = urlsplit(url)
+    if (re.search(r'[\s\\\x00-\x1f\x7f]', url) or parsed.scheme != 'https' or parsed.hostname != 'arxiv.org' or parsed.port is not None
+            or parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment
+            or not re.fullmatch(r'/html/\d{4}\.\d{4,5}(?:v\d+)?/?', parsed.path)):
+        raise ValueError('Reader URL must be an arxiv.org/html paper URL')
+    return url
+
+
 def media_url(value):
     url = string(value, 'Media URL', 2000)
     parsed = urlsplit(url)
@@ -45,7 +55,8 @@ def validate(program):
         raise ValueError('items must be an ordered array of at most 100 Items')
     seen = set()
     for item in program['items']:
-        fields(item, ['id', 'title', 'purpose', 'tags', 'content', 'provenance'])
+        fields(item, ['id', 'title', 'purpose', 'tags', 'content', 'provenance']
+               + (['reader_url'] if 'reader_url' in item else []))
         identifier(item['id'])
         if item['id'] in seen:
             raise ValueError('Duplicate Item ID')
@@ -66,6 +77,10 @@ def validate(program):
         fields(content, ['type', 'markdown'] + (['url'] if kind in MEDIA_TYPES else []))
         if kind in MEDIA_TYPES:
             media_url(content['url'])
+        if 'reader_url' in item:
+            if kind != 'markdown':
+                raise ValueError('Reader EPUB is only available for a reading Item')
+            arxiv_reader_url(item['reader_url'])
         body = string(content['markdown'], 'Markdown body', 100000)
         # Media use declared links; Markdown never executes HTML or embeds.
         if re.search(r'<\s*/?\s*[a-zA-Z!]|!\[', body):
@@ -136,8 +151,10 @@ def compile_program(directory):
         metadata, body = document(path)
         kind = metadata.get('type') if isinstance(metadata, dict) else None
         is_media = isinstance(kind, str) and kind in MEDIA_TYPES
-        fields(metadata, ['id', 'title', 'purpose', 'tags', 'type', 'provenance'] + (['url'] if is_media else []))
+        fields(metadata, ['id', 'title', 'purpose', 'tags', 'type', 'provenance']
+               + (['url'] if is_media else []) + (['reader_url'] if 'reader_url' in metadata else []))
         items.append({key: metadata[key] for key in ['id', 'title', 'purpose', 'tags', 'provenance']} |
                      {'content': {'type': metadata['type'], 'markdown': body} |
-                      ({'url': metadata['url']} if is_media else {})})
+                      ({'url': metadata['url']} if is_media else {})} |
+                     ({'reader_url': metadata['reader_url']} if 'reader_url' in metadata else {}))
     return validate({'id': meta['id'], 'title': meta['title'], 'purpose': purpose, 'items': items})

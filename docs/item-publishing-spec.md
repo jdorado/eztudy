@@ -87,6 +87,7 @@ Media Items have `content: {type, url, markdown}`; their source metadata has
 | Content | Author supplies | Publishing boundary |
 | --- | --- | --- |
 | Readout | Markdown and provenance | Validate fields/references; render safely |
+| arXiv HTML reading | Markdown notes, provenance and optional `reader_url` | Accept only a declared `https://arxiv.org/html/<paper-id>` URL; offer a signed-in, on-demand private EPUB without storing it |
 | Video / podcast / movie | HTTPS URL, Markdown learning notes and provenance | Validate declared type and URL; show a labeled external source link and notes |
 | Image | Referenced image and description | Future asset format/access contract |
 | Interactive widget or game | Description and agent-authored artifact | Deferred until an explicit isolation and rendering contract exists |

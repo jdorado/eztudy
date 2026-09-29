@@ -102,6 +102,33 @@ class SchemaContractTests(unittest.TestCase):
         program = valid_program()
         self.assertEqual(revision(program), revision(json.loads(json.dumps(program))))
 
+    def test_declared_arxiv_html_reader_roundtrip_and_validation(self):
+        program = valid_program()
+        program['items'][0]['reader_url'] = 'https://arxiv.org/html/2402.08954'
+        self.assertEqual(validate(program)['items'][0]['reader_url'], program['items'][0]['reader_url'])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'items').mkdir()
+            (root / 'program.md').write_text('---\n' + json.dumps({
+                'id': 'foundations', 'title': 'Foundations', 'items': ['items/paper.md'],
+            }) + '\n---\nRead the paper.')
+            (root / 'items/paper.md').write_text('---\n' + json.dumps({
+                'id': 'paper', 'title': 'Paper', 'purpose': 'Study the paper', 'tags': [],
+                'type': 'markdown', 'reader_url': program['items'][0]['reader_url'],
+                'provenance': {'text': 'arXiv paper', 'sources': [{'title': 'arXiv HTML', 'url': program['items'][0]['reader_url']}]},
+            }) + '\n---\nRead and reflect.')
+            self.assertEqual(compile_program(root)['items'][0]['reader_url'], program['items'][0]['reader_url'])
+        for url in ('http://arxiv.org/html/2402.08954', 'https://example.com/html/2402.08954',
+                    'https://arxiv.org/html/../admin', 'https://arxiv.org/html/2402.08954?url=http://localhost'):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                program['items'][0]['reader_url'] = url
+                validate(program)
+        program['items'][0]['reader_url'] = 'https://arxiv.org/html/2402.08954'
+        program['items'][0]['content']['type'] = 'video'
+        program['items'][0]['content']['url'] = 'https://example.org/video'
+        with self.assertRaises(ValueError):
+            validate(program)
+
     def test_cli_help_does_not_require_credentials(self):
         result = subprocess.run(
             [sys.executable, "-m", "eztudy_publishing.cli", "--help"],
