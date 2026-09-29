@@ -15,7 +15,7 @@ Ez installation, including backups according to the operator's retention policy.
 Operators should disclose their policy to users, restrict database and backup
 access, and test restoration and deletion procedures before inviting users.
 
-Registration is restricted to the one configured Privy subject. The 0.1 API
+Registration is restricted to configured Privy subjects. The API
 refuses to start with more than one canonical account because multi-tenant
 production isolation is not yet accepted. Chat attachments are limited per
 request, but the release has no storage quota.

@@ -5,7 +5,7 @@ current API from this repository; a healthy legacy service is not a compatible
 backend. The frontend requires `POST /api/account` and `GET /api/content`.
 
 For an API-only deployment, keep the existing canonical MongoDB database and
-Privy app/owner configuration in a private environment file. Set
+Privy app/subject allowlist in a private environment file. Set
 `EZTUDY_CORS_ORIGINS` to the exact frontend origin. Then run:
 
 ```sh
@@ -101,7 +101,9 @@ private file outside the repository, set `API_ENV_FILE`, `EZ_BINDINGS_FILE`, and
 `.env.local`, then run `docker compose --env-file .env.local up -d --build --wait`.
 Terminate TLS in a reverse proxy, expose only the proxy, and set the frontend's
 `VITE_API_BASE_URL` and API's exact `EZTUDY_CORS_ORIGINS` to the public origins.
-Configure exactly one intended Privy subject. Set `API_UID` and
+Configure `EZTUDY_ALLOWED_SUBJECTS` with every approved Privy subject. Preserve
+existing subjects when adding one, and register a separate Ez installation and
+publisher grant for each account. Set `API_UID` and
 `API_GID` to the owner of the binding and token files; those files must be regular,
 non-symlink files with no group/world permission bits.
 

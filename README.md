@@ -4,12 +4,12 @@ Eztudy is a small, self-hostable learning application. It combines a responsive
 React interface, a canonical FastAPI/MongoDB data service, Privy authentication,
 and agent execution through [Ez](https://github.com/jdorado/ez-agents).
 
-This 0.1 baseline supports authenticated owner chat, Markdown Program publication,
+This baseline supports authenticated owner chat, Markdown Program publication,
 flat ordered Markdown and linked video/podcast/movie Items, canonical Program
 selection, and publication receipts. It is
-deliberately a controlled single-owner release: automatic tenant provisioning,
+deliberately an invite-only release: automatic tenant provisioning,
 open public registration, account deletion/export, storage quotas, media hosting,
-and production multi-tenant assurance are not included.
+and broad public multi-tenant assurance are not included.
 
 ## Architecture
 
@@ -34,7 +34,7 @@ with Google login enabled and allow `http://localhost:5175` as an origin.
 ```sh
 cp api/.env.example api/.env.local
 cp web/.env.example web/.env.local
-# Configure both files. Set EZTUDY_ALLOWED_SUBJECT to your Privy subject.
+# Configure both files. Set EZTUDY_ALLOWED_SUBJECTS to the approved Privy subjects.
 cd web && pnpm install --frozen-lockfile && cd ..
 yarn dev
 ```
@@ -42,8 +42,7 @@ yarn dev
 `yarn dev` starts the API and web hot reload together and stops both when you
 exit. Open `http://localhost:5175`. Vite proxies `/api` to the local service. A returning
 account reuses the same server-owned account and tenant mapping. Every other
-subject is rejected. Eztudy 0.1 refuses to start if the database already contains
-more than one canonical account.
+subject is rejected. Each approved subject has a distinct tenant and Ez binding.
 
 ## Frontend deployment
 

@@ -54,6 +54,9 @@ export function App() {
               <p className="auth-footnote">Your programs and conversations are private to your account.</p>
             </> : error ? <>
               <p role="alert" className="error">{error}</p>
+              {error.includes('invite-only') && subject && (
+                <p className="status-detail">For an invitation, share this account ID with the site owner: <code>{subject}</code></p>
+              )}
               <button className="auth-google-button" onClick={() => setAttempt(value => value + 1)}>Try again</button>
             </> : <div className="account-confirmation">
               <span className="confirmation-mark" aria-hidden="true">✓</span>
