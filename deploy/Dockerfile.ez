@@ -1,10 +1,6 @@
-# Extend the pinned Ez image only with the native engine binary.
+# The pinned Ez image owns the native engine and its pnpm installation policy.
 ARG EZ_IMAGE=ez-agents:f75b966
 FROM ${EZ_IMAGE}
 RUN command -v ezenciel-agents-application
 ARG CODEX_VERSION=0.153.4
-USER root
-ENV PNPM_HOME=/opt/pnpm COREPACK_HOME=/opt/corepack COREPACK_DEFAULT_TO_LATEST=0
-ENV PATH=/opt/pnpm:$PATH
-RUN corepack enable && corepack prepare pnpm@10.30.3 --activate && pnpm config set --global global-bin-dir /usr/local/bin
-RUN pnpm add --global --ignore-scripts --config.minimumReleaseAge=10080 --config.trustPolicy=no-downgrade --config.blockExoticSubdeps=true @openai/codex@${CODEX_VERSION}
+RUN test "$(codex --version)" = "codex-cli ${CODEX_VERSION}"
