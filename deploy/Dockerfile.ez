@@ -4,4 +4,7 @@ FROM ${EZ_IMAGE}
 RUN command -v ezenciel-agents-application
 ARG CODEX_VERSION=0.153.4
 USER root
-RUN npm install --global @openai/codex@${CODEX_VERSION}
+ENV PNPM_HOME=/opt/pnpm
+ENV PATH=/opt/pnpm:$PATH
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+RUN pnpm add --global --ignore-scripts --config.minimumReleaseAge=10080 --config.trustPolicy=no-downgrade --config.blockExoticSubdeps=true @openai/codex@${CODEX_VERSION}

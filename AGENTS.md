@@ -22,7 +22,7 @@ Keep credentials, learner data, sessions, and local deployment state out of git.
 ## Fast local loop
 
 - Work directly on `main`. Make the smallest useful change, run one focused
-  check, and use `yarn dev` for quick QA. Preserve other work, then commit and
+  check, and use `pnpm dev` for quick QA. Preserve other work, then commit and
   push `main`.
 - Skip new tests for routine UI, copy, and reversible changes. Add one focused
   regression test for a subtle publishing rule, tenant boundary, or recurring
@@ -31,5 +31,5 @@ Keep credentials, learner data, sessions, and local deployment state out of git.
 - Public/open-source is the default for product code. Keep private config and
   user data outside the repo. Deploy only when requested separately.
 
-Run `yarn dev` from this directory for local API and web hot reload. See
+Run `pnpm dev` from this directory for local API and web hot reload. See
 `README.md` for the one-time environment setup.

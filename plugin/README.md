@@ -63,11 +63,11 @@ From this directory, the offline package checks are:
 qa_dir="$(mktemp -d /tmp/eztudy-plugin.XXXXXX)"
 trap 'rm -rf "$qa_dir"' EXIT
 uv lock --check
-npm run verify
+pnpm run verify
 npm pack --ignore-scripts --pack-destination "$qa_dir"
 ```
 
-`npm run verify` checks the Python contract, the package allowlist, the exact
+`pnpm run verify` checks the Python contract, the package allowlist, the exact
 manifest versions, the packed file list, and the absence of generated state.
 Inspect the resulting tarball and install it through the Ez manager with the
 SHA-256 returned by `ez plugins inspect`; a successful pack or container health

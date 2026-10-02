@@ -1,7 +1,7 @@
 # Makeover Maths
 
 A standalone, local browser game at `/games/makeover-maths`. Start the normal
-development server with `yarn dev`, then open
+development server with `pnpm dev`, then open
 `http://localhost:5175/games/makeover-maths`.
 
 The game includes an illustrated room, tap-to-walk and keyboard movement, a

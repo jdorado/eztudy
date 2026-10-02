@@ -41,7 +41,7 @@ assert.equal(packageJson.bin?.eztudy, 'bin/eztudy');
 assert.equal(packageJson.repository?.directory, 'plugin');
 assert.equal(packageJson.repository?.url, 'git+https://github.com/jdorado/eztudy.git');
 assert.equal(packageJson.engines?.node, '>=22');
-assert.equal(packageJson.packageManager, 'npm@11.9.0');
+assert.equal(packageJson.packageManager, 'pnpm@10.30.3');
 
 const requiredFiles = [
   '.dockerignore',

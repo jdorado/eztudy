@@ -27,7 +27,7 @@ See the [architecture contract](docs/ez-eztudy-architecture-contract.md),
 
 ## Local development
 
-Requires Node.js 22+, Yarn, pnpm 10, Python 3.11+, uv, and MongoDB. Reuse the
+Requires Node.js 22+, pnpm 10.30.3, Python 3.11+, uv, and MongoDB. Reuse the
 shared local MongoDB at `mongodb://localhost:27017`. Create a Privy app
 with Google login enabled and allow `http://localhost:5175` as an origin.
 
@@ -36,10 +36,10 @@ cp api/.env.example api/.env.local
 cp web/.env.example web/.env.local
 # Configure both files. Set EZTUDY_ALLOWED_SUBJECTS to the approved Privy subjects.
 cd web && pnpm install --frozen-lockfile && cd ..
-yarn dev
+pnpm dev
 ```
 
-`yarn dev` starts the API and web hot reload together and stops both when you
+`pnpm dev` starts the API and web hot reload together and stops both when you
 exit. Open `http://localhost:5175`. Vite proxies `/api` to the local service. A returning
 account reuses the same server-owned account and tenant mapping. Every other
 subject is rejected. Each approved subject has a distinct tenant and Ez binding.
