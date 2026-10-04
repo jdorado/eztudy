@@ -1,6 +1,7 @@
 // Project-owned Eztudy icons.
-type IconName = 'route' | 'play' | 'ask' | 'menu' | 'left' | 'right' | 'send' | 'close' | 'check' | 'trash' | 'attach' | 'down' | 'export'
+type IconName = 'route' | 'play' | 'ask' | 'menu' | 'left' | 'right' | 'send' | 'close' | 'check' | 'trash' | 'attach' | 'down' | 'export' | 'refresh'
 const paths: Record<IconName, string[]> = {
+  refresh: ['M20 7v5h-5', 'M4 17v-5h5', 'M6.1 7a7 7 0 0111.55-1.55L20 8', 'M4 16l2.35 2.55A7 7 0 0017.9 17'],
   export: ['M12 3v12', 'M7 10l5 5 5-5', 'M4 17v3h16v-3'],
   attach: ['M20.5 11.5l-8.8 8.8a6 6 0 01-8.5-8.5l9.2-9.2a4 4 0 015.7 5.7l-9.2 9.2a2 2 0 01-2.8-2.8l8.5-8.5'],
   send: ['M5 12h14', 'M13 6l6 6-6 6'],

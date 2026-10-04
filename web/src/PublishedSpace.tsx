@@ -26,7 +26,7 @@ export function PublishedSpace({identity, onSignOut}: {
     return response.json() as Promise<ContentView>
   }, [getAccessToken])
   const refresh = useCallback(async () => {
-    if (busy.current) return
+    if (busy.current) { await reading.current?.catch(() => {}); return }
     busy.current = true
     try {reading.current = request(); setContent(await reading.current); setError('')}
     catch (failure) {setError((failure as Error).message)}
@@ -68,6 +68,6 @@ export function PublishedSpace({identity, onSignOut}: {
     return response.blob()
   }
   if (!content || selecting) return <main className="timeline-empty"><p className="status" role="status">{error || (selecting ? 'Opening Program…' : 'Opening your learning space…')}</p>{error && <button onClick={() => void refresh()}>Try again</button>}</main>
-  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion} onExportReaderEpub={exportReaderEpub}
+  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion} onExportReaderEpub={exportReaderEpub} onRefresh={refresh}
     coach={itemId => <Chat key={content.selected_program_id ?? 'general'} programId={content.selected_program_id} itemId={itemId} />} />
 }

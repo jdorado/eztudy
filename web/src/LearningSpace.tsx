@@ -7,7 +7,7 @@ import './learning.css'
 
 /** Presentation built from the project-owned TimelineScreen and shared element shell.
  * No learner store, entity hierarchy or native execution behavior is imported. */
-export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, onExportReaderEpub, notice, preview = false }: {
+export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, onExportReaderEpub, onRefresh, notice, preview = false }: {
   content: ContentView
   coach: ReactNode | ((itemId: string | null) => ReactNode)
   identity: { name?: string; email?: string }
@@ -15,11 +15,13 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
   onSelectProgram?: (id: string) => void
   onSetCompletion?: (programId: string, itemId: string, completed: boolean) => Promise<void>
   onExportReaderEpub?: (programId: string, itemId: string) => Promise<Blob>
+  onRefresh?: () => Promise<void>
   preview?: boolean
   notice?: string
 }) {
   const [tab, setTab] = useState<'timeline' | 'coach'>('timeline')
   const [itemId, setItemId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const [completionBusy, setCompletionBusy] = useState(false)
   const [completionError, setCompletionError] = useState('')
   const [readerExport, setReaderExport] = useState<{itemId: string; busy: boolean; error: string} | null>(null)
@@ -76,6 +78,12 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
     })
   }
   const choose = (id: string) => { onSelectProgram?.(id); profile.current?.close(); setTab('timeline'); setItemId(null) }
+  const refreshContent = async () => {
+    if (!onRefresh || refreshing) return
+    setRefreshing(true)
+    try { await onRefresh() }
+    finally { setRefreshing(false) }
+  }
   const exportItem = () => {
     if (!item || !program) return
     const body = [`# ${item.title}`, item.purpose, item.content.type === 'markdown' ? '' : `${contentLabels[item.content.type].label}: ${item.content.url}`, item.content.markdown,
@@ -135,6 +143,7 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               <button className={tab === 'timeline' ? 'is-active' : ''} aria-label="Timeline" title="Timeline" aria-current={tab === 'timeline' ? 'page' : undefined} onClick={() => setTab('timeline')}><Icon name="play" /></button>
               <button className={tab === 'coach' ? 'is-active' : ''} aria-label="Coach" title="Coach" aria-current={tab === 'coach' ? 'page' : undefined} onClick={() => setTab('coach')}><Icon name="ask" /></button>
             </nav>
+            {onRefresh && <button className="focus-profile-button focus-refresh-button" aria-label={refreshing ? 'Refreshing content' : 'Refresh content'} title="Refresh content" aria-busy={refreshing} disabled={refreshing} onClick={() => void refreshContent()}><Icon name="refresh" size={18} /></button>}
             <button className="focus-profile-button" aria-label="Profile and Programs" title="Profile and Programs" aria-haspopup="dialog" onClick={() => profile.current?.showModal()}><Icon name="menu" size={18} /></button>
           </div>
         </header>
