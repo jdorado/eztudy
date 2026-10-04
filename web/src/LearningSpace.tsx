@@ -28,18 +28,51 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
   const program = content.programs.find(value => value.id === content.selected_program_id)
   const item = program?.items.find(value => value.id === itemId)
   const isCompleted = !!item && content.completed_item_ids.includes(item.id)
-  useEffect(() => { setItemId(null) }, [content.selected_program_id])
+  const currentIndex = program?.items.findIndex(value => !content.completed_item_ids.includes(value.id)) ?? -1
+  const initialStart = currentIndex < 0 ? (program?.items.length ?? 0) : currentIndex
+  const [windowStart, setWindowStart] = useState(initialStart)
+  const [windowEnd, setWindowEnd] = useState(initialStart + 4)
   useEffect(() => {
+    if (currentIndex >= 0) setWindowEnd(value => Math.max(value, currentIndex + 4))
+  }, [currentIndex])
+  const timelineScroll = useRef(0)
+  const selectedProgram = useRef(content.selected_program_id)
+  useEffect(() => {
+    if (selectedProgram.current === content.selected_program_id) return
+    selectedProgram.current = content.selected_program_id
+    setItemId(null)
+    setWindowStart(initialStart)
+    setWindowEnd(initialStart + 4)
+    timelineScroll.current = 0
     panel.current?.scrollTo(0, 0)
+  }, [content.selected_program_id, initialStart])
+  useEffect(() => {
+    panel.current?.scrollTo(0, itemId ? 0 : timelineScroll.current)
     if (itemId) panel.current?.querySelector<HTMLElement>('h1')?.focus({preventScroll: true})
   }, [itemId, content.selected_program_id])
   const closeReader = () => {
     const previous = itemId
+    const index = program?.items.findIndex(value => value.id === previous) ?? -1
+    if (index >= 0) {
+      setWindowStart(value => Math.min(value, index))
+      setWindowEnd(value => Math.max(value, index + 1))
+    }
     setItemId(null)
     requestAnimationFrame(() => {
       const cards = panel.current?.querySelectorAll<HTMLButtonElement>('.timeline-card')
-      const index = program?.items.findIndex(value => value.id === previous) ?? -1
-      cards?.[index]?.focus({preventScroll: true})
+      Array.from(cards ?? []).find(card => card.dataset.itemId === previous)?.focus({preventScroll: true})
+    })
+  }
+  const openItem = (id: string) => {
+    timelineScroll.current = panel.current?.scrollTop ?? 0
+    setItemId(id)
+  }
+  const showEarlier = () => {
+    const oldHeight = panel.current?.scrollHeight ?? 0
+    const oldTop = panel.current?.scrollTop ?? 0
+    setWindowStart(value => Math.max(0, value - 10))
+    requestAnimationFrame(() => {
+      if (panel.current) panel.current.scrollTop = oldTop + panel.current.scrollHeight - oldHeight
     })
   }
   const choose = (id: string) => { onSelectProgram?.(id); profile.current?.close(); setTab('timeline'); setItemId(null) }
@@ -135,16 +168,19 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               {program.items[program.items.indexOf(item) + 1] && <button className="reader-next" aria-label="Next Item" onClick={() => setItemId(program.items[program.items.indexOf(item) + 1].id)}><Icon name="right" /></button>}
             </nav>
           </article> : program?.items.length ? <section className="timeline-screen" aria-label="Your learning timeline">
-            {timelineSections(program.items).map(group => <section key={group.items[0].id} className="timeline-section" aria-labelledby={group.tag ? `timeline-section-${group.start}` : undefined}>
+            {windowStart > 0 && <button className="timeline-reveal" onClick={showEarlier}>↑ Earlier items · {windowStart} earlier · {program.items.slice(0, windowStart).filter(value => content.completed_item_ids.includes(value.id)).length} completed</button>}
+            {currentIndex < 0 && <div className="timeline-caught-up" role="status"><h1>You’re all caught up.</h1><p>Revisit earlier items or ask Coach for the next item.</p></div>}
+            {timelineSections(program.items.slice(windowStart, windowEnd)).map(group => <section key={group.items[0].id} className="timeline-section" aria-labelledby={group.tag ? `timeline-section-${group.start}` : undefined}>
               {group.tag && <h2 className="timeline-section-label" id={`timeline-section-${group.start}`}>{sectionLabel(group.tag)}</h2>}
-              <ol className="timeline-list" start={group.start + 1}>{group.items.map((value, index) => <li key={value.id} className="timeline-row">
-              <button className="timeline-card" onClick={() => setItemId(value.id)} aria-label={`${contentLabels[value.content.type].action}: ${value.title}`}>
-                <span className="timeline-node" data-completed={content.completed_item_ids.includes(value.id)} aria-hidden="true">{content.completed_item_ids.includes(value.id) ? <Icon name="check" size={16} /> : String(group.start + index + 1).padStart(2, '0')}</span>
-                <span className="timeline-card-copy"><span className="timeline-meta">{contentLabels[value.content.type].label}</span><strong>{value.title}</strong></span>
+              <ol className="timeline-list" start={windowStart + group.start + 1}>{group.items.map((value, index) => <li key={value.id} className="timeline-row">
+              <button className="timeline-card" data-item-id={value.id} aria-current={program.items[currentIndex]?.id === value.id ? 'step' : undefined} onClick={() => openItem(value.id)} aria-label={`${contentLabels[value.content.type].action}: ${value.title}`}>
+                <span className="timeline-node" data-completed={content.completed_item_ids.includes(value.id)} aria-hidden="true">{content.completed_item_ids.includes(value.id) ? <Icon name="check" size={16} /> : String(windowStart + group.start + index + 1).padStart(2, '0')}</span>
+                <span className="timeline-card-copy"><span className="timeline-meta">{program.items[currentIndex]?.id === value.id ? 'Continue · ' : ''}{contentLabels[value.content.type].label}</span><strong>{value.title}</strong></span>
                 <span className="timeline-state">{contentLabels[value.content.type].action} <Icon name="right" size={12} /></span>
               </button>
               </li>)}</ol>
             </section>)}
+            {windowEnd < program.items.length && <button className="timeline-reveal" onClick={() => setWindowEnd(value => value + 10)}>Show more upcoming items ↓</button>}
             <div className="timeline-add-row">
               <button className="timeline-add-item" onClick={() => setTab('coach')} aria-label="Ask Coach for the next item">
                 <span className="timeline-add-node" aria-hidden="true">+</span>

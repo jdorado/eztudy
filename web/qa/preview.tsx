@@ -60,9 +60,15 @@ Open a dictionary near its middle. If your word comes earlier, the later half ca
 The structure of the input changes which procedures are available.`},provenance:{text:'Original Eztudy layout sample. MIT licensed.',sources:[]}
   }]
 },{id:'preview-observation',title:'The art of noticing',purpose:'Describe an observation before explaining it.',items:[]}]
+// Synthetic long timeline for local focus/history QA; no account content.
+const longTimeline = new URLSearchParams(window.location.search).has('long-timeline')
+if (longTimeline) programs[0].items = Array.from({length: 36}, (_, index) => ({
+  ...programs[0].items[index % 2], id: `preview-item-${index + 1}`,
+  title: `Item ${index + 1}: ${programs[0].items[index % 2].title}`,
+}))
 function Preview() {
   const [selected, setSelected] = useState(programs[0].id)
-  const [completed, setCompleted] = useState<string[]>([])
+  const [completed, setCompleted] = useState<string[]>(longTimeline ? programs[0].items.slice(0, new URLSearchParams(window.location.search).has('all-done') ? 36 : 24).map(item => item.id) : [])
   const coach = (
     <section className="chat-window" aria-label="Coach preview">
       <div className="chat-body">

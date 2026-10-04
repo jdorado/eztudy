@@ -106,3 +106,10 @@
   .focus-profile { width:min(calc(100% - 56px),800px); max-height:calc(100dvh - 56px); margin:auto; border-radius:22px; }
   .profile-content { padding:28px 32px; }
 }
+
+.timeline-reveal { display:block; margin:8px 0 16px; padding:12px 16px; border:1px solid #dbe3ee; border-radius:12px; background:#fff; color:#425570; font:inherit; cursor:pointer; }
+.timeline-reveal:hover { background:#f3f6fb; }
+.timeline-card[aria-current='step'] .timeline-node { border-color:#1d4ed8; color:#1d4ed8; background:#eff6ff; }
+.timeline-card[aria-current='step'] .timeline-meta { color:#1d4ed8; }
+.timeline-caught-up h1 { font-size:24px; }
+.timeline-caught-up p { color:#60708a; }
