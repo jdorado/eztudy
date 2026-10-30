@@ -35,7 +35,7 @@ assert.equal(packageJson.name, '@jc_stack/ez-eztudy');
 assert.equal(packageJson.private, true, 'local Eztudy package must remain private');
 assert.equal(packageJson.version, packageVersion);
 assert.equal(packageJson.version, pluginJson.version);
-assert.equal(packageJson.version, lockedVersion);
+assert.equal(packageJson.version.replace(/-beta\.(\d+)/, 'b$1'), lockedVersion);
 assert.match(setuptoolsVersion, /^\d+\.\d+\.\d+$/);
 assert.equal(packageJson.bin?.eztudy, 'bin/eztudy');
 assert.equal(packageJson.repository?.directory, 'plugin');

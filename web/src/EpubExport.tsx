@@ -13,7 +13,7 @@ export function EpubExport({item, programId, onExport, onClose}: {
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [kind, setKind] = useState<EpubInput['kind']>(item?.reader_url ? 'article' : item ? 'item' : 'text')
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(item?.reader_url ? item.title : '')
   const [markdown, setMarkdown] = useState('')
   const [url, setUrl] = useState(item?.reader_url ?? item?.provenance.sources[0]?.url ?? '')
   const [busy, setBusy] = useState(false)
@@ -41,7 +41,7 @@ export function EpubExport({item, programId, onExport, onClose}: {
         : kind === 'article' ? {kind, url: url.trim(), title: title.trim()}
         : {kind: 'text', title: title.trim(), markdown}
       const blob = await onExport(input)
-      const name = kind === 'item' ? item!.title : title.trim() || 'Web article'
+      const name = kind === 'item' ? `${item!.title} — notes` : title.trim() || 'Web article'
       const filename = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim().slice(0, 150) || 'Reading'
       setFile(new File([blob], `${filename}.epub`, {type: 'application/epub+zip'}))
     } catch (failure) {
@@ -70,10 +70,10 @@ export function EpubExport({item, programId, onExport, onClose}: {
       <p>Turn your writing or a web article into a book you can read on Kindle.</p>
       <fieldset disabled={busy}>
         <label>Content<select value={kind} onChange={event => {setKind(event.target.value as EpubInput['kind']); setError('')}}>
-          {item && <option value="item">This item</option>}
+          {item && <option value="item">Item text and notes only</option>}
           <option value="text">My text</option><option value="article">Web article</option>
         </select></label>
-        {kind === 'item' ? <p className="epub-item">{item?.title}<small>Includes the full item, notes and sources.</small></p> : <>
+        {kind === 'item' ? <p className="epub-item">{item?.title}<small>Exports the text shown in EzStudy. To include a linked article, choose Web article.</small></p> : <>
           {kind === 'article' && <>
             <label>Article URL<input type="url" required maxLength={2000} value={url} onChange={event => setUrl(event.target.value)} placeholder="https://…" autoComplete="url" /></label>
             {!!item?.provenance.sources.length && <label>Or choose an item source<select value="" onChange={event => setUrl(event.target.value)}><option value="" disabled>Choose a source…</option>{item.provenance.sources.map(source => <option key={source.url} value={source.url}>{source.title}</option>)}</select></label>}

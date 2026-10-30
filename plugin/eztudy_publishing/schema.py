@@ -10,13 +10,13 @@ ID = re.compile(r"[a-z][a-z0-9-]{0,79}\Z")
 MEDIA_TYPES = {'video', 'podcast', 'movie'}
 
 
-def arxiv_reader_url(value):
-    url = string(value, 'arXiv HTML reader URL', 2000)
+def reader_url(value):
+    url = string(value, 'Article reader URL', 2000)
     parsed = urlsplit(url)
-    if (re.search(r'[\s\\\x00-\x1f\x7f]', url) or parsed.scheme != 'https' or parsed.hostname != 'arxiv.org' or parsed.port is not None
-            or parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment
-            or not re.fullmatch(r'/html/\d{4}\.\d{4,5}(?:v\d+)?/?', parsed.path)):
-        raise ValueError('Reader URL must be an arxiv.org/html paper URL')
+    if (re.search(r'[\s\\\x00-\x1f\x7f]', url) or parsed.scheme != 'https' or not parsed.hostname
+            or parsed.port not in (None, 443) or parsed.username is not None or parsed.password is not None):
+        raise ValueError('Reader URL must use HTTPS with a host and no credentials or custom port')
+    # The API resolves and checks public addresses again on every fetch and redirect.
     return url
 
 
@@ -80,7 +80,7 @@ def validate(program):
         if 'reader_url' in item:
             if kind != 'markdown':
                 raise ValueError('Reader EPUB is only available for a reading Item')
-            arxiv_reader_url(item['reader_url'])
+            reader_url(item['reader_url'])
         body = string(content['markdown'], 'Markdown body', 100000)
         # Media use declared links; Markdown never executes HTML or embeds.
         if re.search(r'<\s*/?\s*[a-zA-Z!]|!\[', body):

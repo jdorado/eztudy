@@ -102,9 +102,9 @@ class SchemaContractTests(unittest.TestCase):
         program = valid_program()
         self.assertEqual(revision(program), revision(json.loads(json.dumps(program))))
 
-    def test_declared_arxiv_html_reader_roundtrip_and_validation(self):
+    def test_declared_article_reader_roundtrip_and_validation(self):
         program = valid_program()
-        program['items'][0]['reader_url'] = 'https://arxiv.org/html/2402.08954'
+        program['items'][0]['reader_url'] = 'https://example.com/essay'
         self.assertEqual(validate(program)['items'][0]['reader_url'], program['items'][0]['reader_url'])
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -118,12 +118,13 @@ class SchemaContractTests(unittest.TestCase):
                 'provenance': {'text': 'arXiv paper', 'sources': [{'title': 'arXiv HTML', 'url': program['items'][0]['reader_url']}]},
             }) + '\n---\nRead and reflect.')
             self.assertEqual(compile_program(root)['items'][0]['reader_url'], program['items'][0]['reader_url'])
-        for url in ('http://arxiv.org/html/2402.08954', 'https://example.com/html/2402.08954',
-                    'https://arxiv.org/html/../admin', 'https://arxiv.org/html/2402.08954?url=http://localhost'):
+        for url in ('http://example.com/essay', 'https://user:password@example.com/essay',
+                    'https://example.com:8443/essay', 'https://example.com/has whitespace', 'https:///essay'):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 program['items'][0]['reader_url'] = url
                 validate(program)
         program['items'][0]['reader_url'] = 'https://arxiv.org/html/2402.08954'
+        self.assertEqual(validate(program)['items'][0]['reader_url'], program['items'][0]['reader_url'])
         program['items'][0]['content']['type'] = 'video'
         program['items'][0]['content']['url'] = 'https://example.org/video'
         with self.assertRaises(ValueError):

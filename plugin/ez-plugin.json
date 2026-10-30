@@ -1,5 +1,5 @@
 {
-  "schemaVersion":1,"id":"eztudy","version":"0.1.4",
+  "schemaVersion":1,"id":"eztudy","version":"0.1.5-beta.1",
   "description":"Read/publish Programs with ez eztudy. Markdown, video, podcast and movie Items; media use HTTPS links and notes. One Item per reading or activity; weeks/sessions are shared tags. Read the authoring skill before authoring. Require a publication receipt and canonical show readback.",
   "example": "eztudy list",
   "commands":{"eztudy":{"executable":"bin/eztudy","args":[],"exposure":{"receivesExternalContent":true,"sendsExternally":true,"changesRecords":true,"requiresReview":true}}},

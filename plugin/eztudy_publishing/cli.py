@@ -27,7 +27,7 @@ def main():
                'check validates structure and authorization, not how activities are split. '
                'After publishing, use show to verify Item titles, order and tags against the request.',
     )
-    parser.add_argument('--version', action='version', version='eztudy 0.1.4')
+    parser.add_argument('--version', action='version', version='eztudy 0.1.5-beta.1')
     parser.add_argument('operation', choices=['list', 'show', 'check', 'publish'])
     parser.add_argument('target', nargs='?', help='Program ID for show; source directory for check/publish')
     args = parser.parse_args()

@@ -28,8 +28,10 @@ plugin. Record the Ez run, plugin receipt, and canonical content revision.
 
 For the independent reader/export flow (no agent needed): open **EPUB** in the
 header, create a book from original text, then create one from a public article
-URL. Open an Item and export **This item** to confirm its content and attribution
-are included. Download the results: require EPUB MIME, an uncompressed first
+URL. For an Item with `reader_url`, open its EPUB action and create/download
+without changing Content: require the full source article, including its final
+section. Choose **Item text and notes only** to confirm that separate export
+contains the authored notes and attribution. Download the results: require EPUB MIME, an uncompressed first
 `mimetype` ZIP entry, valid package/navigation/XHTML, and the expected body text.
 Check the dialog at phone width, including busy/error/ready states and the
 Download/Share actions. A private URL must fail without a request to that host.

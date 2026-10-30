@@ -254,7 +254,7 @@ requires-dist = [
 
 [[package]]
 name = "eztudy-publishing"
-version = "0.1.4"
+version = "0.1.5b1"
 source = { editable = "../plugin" }
 
 [[package]]

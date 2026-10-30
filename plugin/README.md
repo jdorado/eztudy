@@ -6,7 +6,8 @@ Items support Markdown readouts and video, podcast and movie recommendations
 with HTTPS source links and Markdown learning notes. The frontend labels each
 type and opens media on the source website; no upload or embed is required.
 An optional verified `reader_url` on a Markdown Item enables a signed-in,
-on-demand private EPUB from an arXiv HTML paper. The converted file is not stored.
+on-demand private EPUB from the full public web article or arXiv HTML paper,
+instead of defaulting to the Item's reading guide. The converted file is not stored.
 
 This checkout is private/local QA. `package.json` is marked private, so packing
 the plugin does not authorize npm publication or a public catalog entry.
