@@ -25,6 +25,20 @@ See the [architecture contract](docs/ez-eztudy-architecture-contract.md),
 [publishing contract](docs/item-publishing-spec.md), and
 [self-hosting guide](deploy/README.md).
 
+## Read on Kindle
+
+The **EPUB** button creates a private book from an open Item, pasted text/Markdown,
+or a public HTTPS article URL. Download the file and upload it through
+[Send to Kindle](https://www.amazon.com/sendtokindle), or use **Share** on a
+supported device. Exports include text, headings, lists, tables and source links;
+images are represented by their available alt text. No export is stored or
+published. Pages requiring login or scripts may need their text pasted manually.
+
+The API generates EPUBs on demand for admitted accounts. Published Item exports
+read canonical tenant content. Article fetching pins a public IP for each HTTPS
+hop, checks redirects, and limits response size and time; extracted HTML is
+reduced to an inert XHTML allowlist before packaging.
+
 ## Local development
 
 Requires Node.js 22+, pnpm 10.30.3, Python 3.11+, uv, and MongoDB. Reuse the

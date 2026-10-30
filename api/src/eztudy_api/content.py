@@ -1,16 +1,17 @@
 """Authorized publication and canonical selection. No agent execution."""
 import hashlib
 from datetime import datetime, timezone
+from typing import Annotated, Literal
 
 from bson import BSON
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 from pymongo.errors import DuplicateKeyError
 from starlette.concurrency import run_in_threadpool
 
 from .auth import authenticated_user
 from .database import account_for, accounts, database
-from .reader_epub import fetch_reader_html, private_reader_epub
+from .reader_epub import fetch_reader_html, private_reader_epub, item_epub, text_epub
 from eztudy_publishing.schema import validate, revision
 
 router = APIRouter(prefix='/api/content')
@@ -217,18 +218,68 @@ def set_completion(program_id: str, item_id: str, completion: Completion, respon
 
 
 @router.get('/programs/{program_id}/items/{item_id}/private-epub')
-def reader_epub(program_id: str, item_id: str, subject: str = Depends(authenticated_user)):
-    """Give the signed-in learner a private EPUB from a published arXiv HTML source."""
+def reader_epub(program_id: str, item_id: str, subject: str = Depends(authenticated_user), notes: bool = False):
+    """Export the tenant's canonical Item, or its declared reader source."""
     account = account_for(subject)
     record = programs.find_one({'_id': account['tenant_id'] + ':' + program_id})
     item = next((item for item in (record or {}).get('program', {}).get('items', [])
                  if item['id'] == item_id), None)
-    if not item or not item.get('reader_url'):
-        raise HTTPException(404, 'No reader EPUB is available for this Item.')
+    if not item:
+        raise HTTPException(404, 'Item not found.')
     try:
-        url = item['reader_url']
-        epub = private_reader_epub(source_html=fetch_reader_html(url), source_url=url, title=item['title'])
+        if item.get('reader_url') and not notes:
+            source_html, url = fetch_reader_html(item['reader_url'])
+            epub = private_reader_epub(source_html=source_html, source_url=url, title=item['title'])
+        else:
+            epub = item_epub(item)
     except ValueError as error:
-        raise HTTPException(502, 'The arXiv HTML paper could not be prepared as an EPUB.') from error
+        raise HTTPException(422, str(error)) from error
+    return epub_response(epub, item_id)
+
+
+def epub_response(epub: bytes, filename: str = 'reading'):
     return Response(content=epub, media_type='application/epub+zip', headers={
-        'Content-Disposition': f'attachment; filename="{item_id}.epub"', 'Cache-Control': 'no-store'})
+        'Content-Disposition': f'attachment; filename="{filename}.epub"', 'Cache-Control': 'no-store'})
+
+
+class TextExport(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    kind: Literal['text']
+    title: str = Field(min_length=1, max_length=200)
+    markdown: str = Field(min_length=1, max_length=100000)
+
+
+class ArticleExport(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    kind: Literal['article']
+    url: str = Field(min_length=1, max_length=2000)
+    title: str = Field(default='', max_length=200)
+
+
+export_input = TypeAdapter(Annotated[TextExport | ArticleExport, Field(discriminator='kind')])
+
+
+def create_epub(payload: TextExport | ArticleExport):
+    try:
+        if isinstance(payload, TextExport):
+            return epub_response(text_epub(title=payload.title, markdown=payload.markdown))
+        source_html, url = fetch_reader_html(payload.url)
+        return epub_response(private_reader_epub(source_html=source_html, source_url=url, title=payload.title))
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+
+
+@router.post('/private-epub')
+async def create_epub_route(request: Request, subject: str = Depends(authenticated_user)):
+    # Standalone exports require an admitted account; content is never persisted.
+    await run_in_threadpool(account_for, subject)
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > 650000:
+            raise HTTPException(413, 'The export is too large. Use at most 100,000 characters.')
+        body.extend(chunk)
+    try:
+        payload = export_input.validate_json(bytes(body))
+    except ValidationError as error:
+        raise HTTPException(422, 'Provide an article URL or a title and text (up to 100,000 characters).') from error
+    return await run_in_threadpool(create_epub, payload)

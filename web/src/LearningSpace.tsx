@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
+import { EpubExport, type EpubInput } from './EpubExport'
 import { MarkdownContent } from './MarkdownContent'
 import type { ContentView } from './content'
 import { contentLabels, sectionLabel, timelineSections } from './content'
@@ -7,24 +8,22 @@ import './learning.css'
 
 /** Presentation built from the project-owned TimelineScreen and shared element shell.
  * No learner store, entity hierarchy or native execution behavior is imported. */
-export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, onExportReaderEpub, onRefresh, notice, preview = false }: {
+export function LearningSpace({ content, coach, identity, onSignOut, onSelectProgram, onSetCompletion, onExportEpub, notice, preview = false }: {
   content: ContentView
   coach: ReactNode | ((itemId: string | null) => ReactNode)
   identity: { name?: string; email?: string }
   onSignOut?: () => void
   onSelectProgram?: (id: string) => void
   onSetCompletion?: (programId: string, itemId: string, completed: boolean) => Promise<void>
-  onExportReaderEpub?: (programId: string, itemId: string) => Promise<Blob>
-  onRefresh?: () => Promise<void>
+  onExportEpub?: (input: EpubInput) => Promise<Blob>
   preview?: boolean
   notice?: string
 }) {
   const [tab, setTab] = useState<'timeline' | 'coach'>('timeline')
   const [itemId, setItemId] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
   const [completionBusy, setCompletionBusy] = useState(false)
   const [completionError, setCompletionError] = useState('')
-  const [readerExport, setReaderExport] = useState<{itemId: string; busy: boolean; error: string} | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
   const profile = useRef<HTMLDialogElement>(null)
   const panel = useRef<HTMLDivElement>(null)
   const program = content.programs.find(value => value.id === content.selected_program_id)
@@ -78,23 +77,6 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
     })
   }
   const choose = (id: string) => { onSelectProgram?.(id); profile.current?.close(); setTab('timeline'); setItemId(null) }
-  const refreshContent = async () => {
-    if (!onRefresh || refreshing) return
-    setRefreshing(true)
-    try { await onRefresh() }
-    finally { setRefreshing(false) }
-  }
-  const exportItem = () => {
-    if (!item || !program) return
-    const body = [`# ${item.title}`, item.purpose, item.content.type === 'markdown' ? '' : `${contentLabels[item.content.type].label}: ${item.content.url}`, item.content.markdown,
-      item.provenance.text, ...item.provenance.sources.map(source => `- [${source.title}](${source.url})`)].filter(Boolean).join('\n\n') + '\n'
-    const url = URL.createObjectURL(new Blob([body], {type: 'text/markdown;charset=utf-8'}))
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${item.id.replace(/[^a-z0-9_-]/gi, '-')}.md`
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
   const toggleCompletion = async () => {
     if (!item || !program || !onSetCompletion || completionBusy) return
     setCompletionBusy(true)
@@ -102,34 +84,6 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
     try { await onSetCompletion(program.id, item.id, !isCompleted) }
     catch { setCompletionError('Completion could not be saved. Please try again.') }
     finally { setCompletionBusy(false) }
-  }
-  const exportReader = async () => {
-    if (!item?.reader_url || !program || !onExportReaderEpub || (readerExport?.itemId === item.id && readerExport.busy)) return
-    const currentId = item.id
-    setReaderExport({itemId: currentId, busy: true, error: ''})
-    try {
-      const blob = await onExportReaderEpub(program.id, currentId)
-      const filename = `${item.title.replace(/[\\/:*?"<>|]/g, '').trim() || currentId}.epub`
-      const file = new File([blob], filename, {type: 'application/epub+zip'})
-      const shareData = {files: [file], title: item.title}
-      let canShare = !!navigator.share
-      try {if (canShare && navigator.canShare) canShare = navigator.canShare(shareData)}
-      catch {canShare = false}
-      if (canShare) {
-        try {await navigator.share(shareData); return}
-        catch (failure) {if (failure instanceof DOMException && failure.name === 'AbortError') return}
-      }
-      const url = URL.createObjectURL(file)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    } catch (failure) {
-      setReaderExport({itemId: currentId, busy: false, error: failure instanceof Error ? failure.message : 'Could not prepare the EPUB.'})
-    } finally {
-      setReaderExport(value => value?.itemId === currentId ? {...value, busy: false} : value)
-    }
   }
   return <div className="learning-root">
     {notice && <aside className="content-notice" role="alert">{notice}</aside>}
@@ -143,7 +97,7 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               <button className={tab === 'timeline' ? 'is-active' : ''} aria-label="Timeline" title="Timeline" aria-current={tab === 'timeline' ? 'page' : undefined} onClick={() => setTab('timeline')}><Icon name="play" /></button>
               <button className={tab === 'coach' ? 'is-active' : ''} aria-label="Coach" title="Coach" aria-current={tab === 'coach' ? 'page' : undefined} onClick={() => setTab('coach')}><Icon name="ask" /></button>
             </nav>
-            {onRefresh && <button className="focus-profile-button focus-refresh-button" aria-label={refreshing ? 'Refreshing content' : 'Refresh content'} title="Refresh content" aria-busy={refreshing} disabled={refreshing} onClick={() => void refreshContent()}><Icon name="refresh" size={18} /></button>}
+            <button className="focus-epub-button" onClick={() => setExportOpen(true)} aria-label="Create EPUB for Kindle">EPUB</button>
             <button className="focus-profile-button" aria-label="Profile and Programs" title="Profile and Programs" aria-haspopup="dialog" onClick={() => profile.current?.showModal()}><Icon name="menu" size={18} /></button>
           </div>
         </header>
@@ -156,12 +110,10 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               <div className="reader-actions">
                 {onSetCompletion && <button onClick={() => void toggleCompletion()} disabled={completionBusy} aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'} title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'} aria-pressed={isCompleted}><Icon name="check" size={18} /></button>}
                 <button onClick={() => setTab('coach')} aria-label="Ask Coach about Item" title="Ask Coach about Item"><Icon name="ask" size={18} /></button>
-                <button className="reader-format-action" onClick={exportItem} aria-label="Download Item notes as Markdown" title="Download Item notes as Markdown">MD</button>
-                {item.reader_url && onExportReaderEpub && <button className="reader-format-action reader-epub-button" onClick={() => void exportReader()} disabled={readerExport?.itemId === item.id && readerExport.busy} aria-label={readerExport?.itemId === item.id && readerExport.busy ? 'Preparing EPUB' : 'Share or download arXiv paper as EPUB'} title="Share or download arXiv paper as EPUB">EPUB</button>}
+                <button className="reader-format-action reader-epub-button" onClick={() => setExportOpen(true)} aria-label="Export item as EPUB" title="Export for Kindle">EPUB</button>
               </div>
             </div>
             {completionError && <p className="reader-error" role="alert">{completionError}</p>}
-            {readerExport?.itemId === item.id && readerExport.error && <p className="reader-error" role="alert">{readerExport.error}</p>}
             <header className="element-header"><p className="eyebrow">{contentLabels[item.content.type].label}</p>
               <h1 tabIndex={-1}>{item.title}</h1><p className="element-purpose">{item.purpose}</p>
               {item.tags.length > 0 && <ul className="item-tags" aria-label="Tags">{item.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>}
@@ -200,6 +152,7 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
         </div>
         <div className="focus-panel focus-coach-panel" hidden={tab !== 'coach'}>{typeof coach === 'function' ? coach(item?.id ?? null) : coach}</div>
       </main>
+      {exportOpen && <EpubExport item={item} programId={program?.id} onExport={onExportEpub} onClose={() => setExportOpen(false)} />}
       <dialog ref={profile} className="focus-profile" aria-label="Profile" onClick={event => {if (event.target === profile.current) profile.current?.close()}}>
         <div className="profile-content"><header><p className="eyebrow">Profile</p><button aria-label="Close Profile" onClick={() => profile.current?.close()}>×</button></header>
           <strong>{identity.name ?? 'Your account'}</strong>{identity.email && <p>{identity.email}</p>}

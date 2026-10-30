@@ -67,7 +67,6 @@ if (longTimeline) programs[0].items = Array.from({length: 36}, (_, index) => ({
   title: `Item ${index + 1}: ${programs[0].items[index % 2].title}`,
 }))
 function Preview() {
-  const [refreshCount, setRefreshCount] = useState(0)
   const [selected, setSelected] = useState(programs[0].id)
   const [completed, setCompleted] = useState<string[]>(longTimeline ? programs[0].items.slice(0, new URLSearchParams(window.location.search).has('all-done') ? 36 : 24).map(item => item.id) : [])
   const coach = (
@@ -94,7 +93,7 @@ function Preview() {
       </div>
     </section>
   )
-  return <LearningSpace preview onRefresh={async () => {setRefreshCount(value => value + 1)}} content={{programs: programs.map(program => ({...program, items: program.items.map(item => ({...item, title: item.title + (refreshCount ? ` · Refresh ${refreshCount}` : '')}))})), selected_program_id:selected, completed_item_ids:completed}} onSelectProgram={id => {setSelected(id); setCompleted([])}}
+  return <LearningSpace preview content={{programs, selected_program_id:selected, completed_item_ids:completed}} onSelectProgram={id => {setSelected(id); setCompleted([])}}
     onSetCompletion={async (_programId, itemId, value) => setCompleted(current => value ? [...current, itemId] : current.filter(id => id !== itemId))}
     identity={{name:'Layout preview'}} coach={coach} />
 }

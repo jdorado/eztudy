@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePrivy } from '@privy-io/react-auth'
 import { LearningSpace } from './LearningSpace'
+import type { EpubInput } from './EpubExport'
 import { Chat } from './Chat'
 import type { ContentView } from './content'
 import { apiUrl } from './config'
@@ -58,16 +59,24 @@ export function PublishedSpace({identity, onSignOut}: {
       setError('')
     } finally { busy.current = false }
   }
-  async function exportReaderEpub(programId: string, itemId: string) {
+  async function exportEpub(input: EpubInput) {
     const token = await getAccessToken()
     if (!token) throw new Error('Please sign in again.')
-    const response = await fetch(apiUrl(`/api/content/programs/${encodeURIComponent(programId)}/items/${encodeURIComponent(itemId)}/private-epub`), {
-      cache: 'no-store', headers: {Authorization: `Bearer ${token}`},
+    const path = input.kind === 'item'
+      ? `/api/content/programs/${encodeURIComponent(input.programId)}/items/${encodeURIComponent(input.itemId)}/private-epub?notes=true`
+      : '/api/content/private-epub'
+    const response = await fetch(apiUrl(path), {
+      method: input.kind === 'item' ? 'GET' : 'POST', cache: 'no-store',
+      headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
+      ...(input.kind === 'item' ? {} : {body: JSON.stringify(input)}),
     })
-    if (!response.ok) throw new Error('The arXiv HTML paper could not be prepared as an EPUB right now.')
+    if (!response.ok) {
+      const failure = await response.json().catch(() => null)
+      throw new Error(typeof failure?.detail === 'string' ? failure.detail : 'Could not prepare the EPUB. Please try again.')
+    }
     return response.blob()
   }
   if (!content || selecting) return <main className="timeline-empty"><p className="status" role="status">{error || (selecting ? 'Opening Program…' : 'Opening your learning space…')}</p>{error && <button onClick={() => void refresh()}>Try again</button>}</main>
-  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion} onExportReaderEpub={exportReaderEpub} onRefresh={refresh}
+  return <LearningSpace notice={error} content={content} identity={identity} onSignOut={onSignOut} onSelectProgram={id => void select(id)} onSetCompletion={setCompletion} onExportEpub={exportEpub}
     coach={itemId => <Chat key={content.selected_program_id ?? 'general'} programId={content.selected_program_id} itemId={itemId} />} />
 }
