@@ -172,9 +172,12 @@ def private_reader_epub(*, source_html: str, source_url: str, title: str = '') -
         raise ValueError('No readable article was found. Paste the article text instead.') from error
     if len(''.join(root.itertext()).strip()) < 200:
         raise ValueError('No readable article was found. Paste the article text instead.')
-    # Preserve the complete scientific paper and math instead of scoring its sections.
+    # Preserve semantic article structure: readability can discard chapter headers.
     papers = root.xpath('//article[@data-type="main" or contains(concat(" ", normalize-space(@class), " "), " ltx_document ")]')
-    extracted = html.tostring(papers[0], encoding='unicode') if papers else document.summary()
+    mains = root.xpath('//main')
+    articles = root.xpath('//article[not(ancestor::article)]')
+    body = papers or (mains if len(mains) == 1 else []) or (articles if len(articles) == 1 else [])
+    extracted = html.tostring(body[0], encoding='unicode') if body else document.summary()
     article = clean_xhtml(extracted, source_url)
     if len(''.join(html.fromstring(article).itertext()).strip()) < 200:
         raise ValueError('No readable article was found. Paste the article text instead.')

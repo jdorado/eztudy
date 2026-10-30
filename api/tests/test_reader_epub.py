@@ -112,6 +112,17 @@ class ReaderEpubTests(unittest.TestCase):
             self.assertEqual(connection.call_args.args[:2], ('example.com', '93.184.216.34'))
             connection.return_value.close.assert_called_once()
 
+    def test_article_keeps_chapter_headers_and_short_sections(self):
+        source = '<html><head><title>Long essay</title></head><body><nav>Site menu</nav><main>'
+        source += '<section><header><h2>Opening chapter</h2></header><p>' + 'Developed argument. ' * 40 + '</p></section>'
+        source += '<section><header><h2>Final chapter</h2></header><h3>Counterpoint</h3><p>A short but essential conclusion.</p></section>'
+        source += '<aside>Subscribe now</aside></main><footer>Site footer</footer></body></html>'
+        result = chapter(private_reader_epub(source_html=source, source_url='https://example.com/essay'))
+        for expected in ('<h2>Opening chapter</h2>', '<h2>Final chapter</h2>', '<h3>Counterpoint</h3>', 'A short but essential conclusion.'):
+            self.assertIn(expected, result)
+        for excluded in ('Site menu', 'Subscribe now', 'Site footer'):
+            self.assertNotIn(excluded, result)
+
     def test_fetch_is_bounded_and_returns_final_url(self):
         with patch.object(exporter, 'public_address', return_value=('example.com', '93.184.216.34')), \
              patch.object(exporter, 'PublicHTTPSConnection') as connection:
