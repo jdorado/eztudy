@@ -128,3 +128,9 @@ Gate: two related authenticated messages produce contextual replies in the FE;
 reload retains them. No Telegram dependency, duplicate execution, second runner
 or app-specific scheduler. Follow the [cutover runbook](CUTOVER.md) before changing
 a live domain or database.
+
+For saved EPUB uploads, configure the reverse proxy for this API origin with
+`client_max_body_size 10m` (or equivalent). The API independently enforces the
+10 MiB bound before parsing. Keep all authentication and routing unchanged.
+The `epub_assets` MongoDB collection is canonical private content: include it in
+regular backup/restore procedures along with Programs. No extra volume is needed.
