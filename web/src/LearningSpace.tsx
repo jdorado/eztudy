@@ -97,7 +97,6 @@ export function LearningSpace({ content, coach, identity, onSignOut, onSelectPro
               <button className={tab === 'timeline' ? 'is-active' : ''} aria-label="Timeline" title="Timeline" aria-current={tab === 'timeline' ? 'page' : undefined} onClick={() => setTab('timeline')}><Icon name="play" /></button>
               <button className={tab === 'coach' ? 'is-active' : ''} aria-label="Coach" title="Coach" aria-current={tab === 'coach' ? 'page' : undefined} onClick={() => setTab('coach')}><Icon name="ask" /></button>
             </nav>
-            <button className="focus-epub-button" onClick={() => setExportOpen(true)} aria-label="Create EPUB for Kindle">EPUB</button>
             <button className="focus-profile-button" aria-label="Profile and Programs" title="Profile and Programs" aria-haspopup="dialog" onClick={() => profile.current?.showModal()}><Icon name="menu" size={18} /></button>
           </div>
         </header>
