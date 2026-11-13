@@ -56,7 +56,8 @@ def validate(program):
     seen = set()
     for item in program['items']:
         fields(item, ['id', 'title', 'purpose', 'tags', 'content', 'provenance']
-               + (['reader_url'] if 'reader_url' in item else []))
+               + (['reader_url'] if 'reader_url' in item else [])
+               + (['epub_asset_id'] if 'epub_asset_id' in item else []))
         identifier(item['id'])
         if item['id'] in seen:
             raise ValueError('Duplicate Item ID')
@@ -81,6 +82,9 @@ def validate(program):
             if kind != 'markdown':
                 raise ValueError('Reader EPUB is only available for a reading Item')
             reader_url(item['reader_url'])
+        if 'epub_asset_id' in item:
+            if kind != 'markdown' or not isinstance(item['epub_asset_id'], str) or not re.fullmatch(r'[a-f0-9]{64}', item['epub_asset_id']):
+                raise ValueError('EPUB attachment requires a reading Item and a SHA-256 asset ID')
         body = string(content['markdown'], 'Markdown body', 100000)
         # Media use declared links; Markdown never executes HTML or embeds.
         if re.search(r'<\s*/?\s*[a-zA-Z!]|!\[', body):
@@ -152,9 +156,11 @@ def compile_program(directory):
         kind = metadata.get('type') if isinstance(metadata, dict) else None
         is_media = isinstance(kind, str) and kind in MEDIA_TYPES
         fields(metadata, ['id', 'title', 'purpose', 'tags', 'type', 'provenance']
-               + (['url'] if is_media else []) + (['reader_url'] if 'reader_url' in metadata else []))
+               + (['url'] if is_media else []) + (['reader_url'] if 'reader_url' in metadata else [])
+               + (['epub_asset_id'] if 'epub_asset_id' in metadata else []))
         items.append({key: metadata[key] for key in ['id', 'title', 'purpose', 'tags', 'provenance']} |
                      {'content': {'type': metadata['type'], 'markdown': body} |
                       ({'url': metadata['url']} if is_media else {})} |
-                     ({'reader_url': metadata['reader_url']} if 'reader_url' in metadata else {}))
+                     ({'reader_url': metadata['reader_url']} if 'reader_url' in metadata else {}) |
+                     ({'epub_asset_id': metadata['epub_asset_id']} if 'epub_asset_id' in metadata else {}))
     return validate({'id': meta['id'], 'title': meta['title'], 'purpose': purpose, 'items': items})

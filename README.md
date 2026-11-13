@@ -92,3 +92,10 @@ and report vulnerabilities through [`SECURITY.md`](SECURITY.md).
 Project-owned source is MIT licensed. Dependencies retain their own terms; web
 redistributors must review [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md),
 including the non-MIT terms present in the current Privy dependency graph.
+
+Existing EPUBs can also be retained as private reading attachments through the
+publishing plugin. `upload-epub FILE --program ID` returns an `epub_asset_id` to
+include in Item metadata before normal publication. The EPUB dialog then offers
+**Saved EPUB (complete book)** for download/share without reconverting the notes.
+This is a download facility, not an embedded ebook reader. Stored EPUBs are
+limited to 10 MiB and included in the canonical MongoDB backup.

@@ -27,9 +27,11 @@ def main():
                'check validates structure and authorization, not how activities are split. '
                'After publishing, use show to verify Item titles, order and tags against the request.',
     )
-    parser.add_argument('--version', action='version', version='eztudy 0.1.5-beta.1')
-    parser.add_argument('operation', choices=['list', 'show', 'check', 'publish'])
+    parser.add_argument('--version', action='version', version='eztudy 0.1.6-beta.1')
+    parser.add_argument('operation', choices=['list', 'show', 'check', 'publish', 'upload-epub', 'download-epub'])
     parser.add_argument('target', nargs='?', help='Program ID for show; source directory for check/publish')
+    parser.add_argument('--program', help='Program ID for EPUB upload/download')
+    parser.add_argument('--output', help='Destination EPUB path for download-epub')
     args = parser.parse_args()
     if (args.operation == 'list' and args.target) or (args.operation != 'list' and not args.target):
         parser.error('list takes no target; show needs a Program ID; check/publish need a source directory')
@@ -43,6 +45,37 @@ def main():
         if parsed.path not in {'', '/'} or parsed.query or parsed.fragment or parsed.username or parsed.password:
             raise ValueError('EZTUDY_API_URL must be an origin')
         token = Path(os.environ.get('EZTUDY_TOKEN_FILE', config.get('token_file', ''))).read_text().strip()
+        if args.operation in {'upload-epub', 'download-epub'}:
+            from urllib.parse import quote
+            if not args.program:
+                raise ValueError('--program is required')
+            endpoint = origin + '/api/content/published/' + quote(args.program, safe='') + '/epub-assets'
+            headers = {'Authorization': 'Bearer ' + token}
+            if args.operation == 'upload-epub':
+                path = Path(args.target)
+                if path.stat().st_size > 10 * 1024 * 1024:
+                    raise ValueError('EPUB must be at most 10 MiB')
+                data = path.read_bytes()
+                request = Request(endpoint, data=data, headers=headers | {'Content-Type': 'application/epub+zip'})
+                with build_opener(NoRedirect).open(request, timeout=60) as response:
+                    result = json.load(response)
+                import hashlib
+                if result.get('epub_asset_id') != hashlib.sha256(data).hexdigest():
+                    raise ValueError('Upload receipt does not match file')
+            else:
+                if not args.output:
+                    raise ValueError('--output is required')
+                import hashlib
+                request = Request(endpoint + '/' + quote(args.target, safe=''), headers=headers)
+                with build_opener(NoRedirect).open(request, timeout=60) as response:
+                    data = response.read(10 * 1024 * 1024 + 1)
+                if hashlib.sha256(data).hexdigest() != args.target:
+                    raise ValueError('Downloaded EPUB does not match asset ID')
+                with Path(args.output).open('xb') as output:
+                    output.write(data)
+                result = {'epub_asset_id': args.target, 'size_bytes': len(data), 'output': args.output}
+            print(json.dumps(result))
+            return 0
         if args.operation in {'list', 'show'}:
             from urllib.parse import quote
             read_path = '/api/content/published' + ('/' + quote(args.target, safe='') if args.operation == 'show' else '')

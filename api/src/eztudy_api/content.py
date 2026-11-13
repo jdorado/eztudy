@@ -1,5 +1,7 @@
 """Authorized publication and canonical selection. No agent execution."""
 import hashlib
+import io
+import zipfile
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
@@ -18,6 +20,8 @@ router = APIRouter(prefix='/api/content')
 programs = database.programs
 item_progress = database.item_progress
 credentials = database.publication_credentials
+epub_assets = database.epub_assets
+MAX_EPUB_BYTES = 10 * 1024 * 1024
 MAX_PUBLICATION_BODY_BYTES = 2_000_000
 MAX_SELECTION_BODY_BYTES = 4_096
 
@@ -75,12 +79,74 @@ def published_program(program_id: str, grant=Depends(publisher)):
     return record
 
 
+
+def stored_epub(tenant_id, program_id, asset_id, metadata_only=False):
+    projection = {'data': 0} if metadata_only else None
+    record = epub_assets.find_one({'_id': ':'.join((tenant_id, program_id, asset_id))}, projection)
+    if not record:
+        raise HTTPException(404, 'EPUB attachment not found in this Program.')
+    return record
+
+
+def save_epub(program_id, data, grant):
+    authorized_program(grant, program_id)
+    if not data or len(data) > MAX_EPUB_BYTES:
+        raise HTTPException(413, 'EPUB must be at most 10 MiB.')
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as book:
+            entries = book.infolist()
+            names = [entry.filename for entry in entries]
+            if (len(entries) > 5000 or len(names) != len(set(names))
+                    or sum(entry.file_size for entry in entries) > 100 * 1024 * 1024
+                    or any(entry.flag_bits & 1 for entry in entries)
+                    or any(name.startswith('/') or '..' in name.split('/') for name in names)
+                    or 'META-INF/container.xml' not in names
+                    or book.getinfo('mimetype').file_size != 20
+                    or book.read('mimetype') != b'application/epub+zip'
+                    or not any(name.endswith('.opf') for name in names)):
+                raise ValueError('Invalid EPUB archive')
+    except (zipfile.BadZipFile, KeyError, ValueError, RuntimeError) as error:
+        raise HTTPException(422, 'Provide a valid, unencrypted EPUB archive (max 100 MiB expanded).') from error
+    digest = hashlib.sha256(data).hexdigest()
+    key = ':'.join((grant['tenant_id'], program_id, digest))
+    record = {'_id': key, 'tenant_id': grant['tenant_id'], 'program_id': program_id,
+              'sha256': digest, 'size_bytes': len(data), 'data': data,
+              'uploaded_at': datetime.now(timezone.utc).isoformat()}
+    try:
+        epub_assets.update_one({'_id': key}, {'$setOnInsert': record}, upsert=True)
+    except DuplicateKeyError:
+        # Another identical upload won the insert; content-addressed bytes match.
+        stored_epub(grant['tenant_id'], program_id, digest, metadata_only=True)
+    return {'epub_asset_id': digest, 'size_bytes': len(data), 'program_id': program_id}
+
+
+@router.post('/published/{program_id}/epub-assets')
+async def upload_epub(program_id: str, request: Request, grant=Depends(publisher)):
+    authorized_program(grant, program_id)
+    data = bytearray()
+    async for chunk in request.stream():
+        if len(data) + len(chunk) > MAX_EPUB_BYTES:
+            raise HTTPException(413, 'EPUB must be at most 10 MiB.')
+        data.extend(chunk)
+    return await run_in_threadpool(save_epub, program_id, bytes(data), grant)
+
+
+@router.get('/published/{program_id}/epub-assets/{asset_id}')
+def inspect_epub(program_id: str, asset_id: str, grant=Depends(publisher)):
+    authorized_program(grant, program_id)
+    record = stored_epub(grant['tenant_id'], program_id, asset_id)
+    return epub_response(bytes(record['data']), 'reading')
+
+
 def checked(payload, grant):
     try:
         program = validate(payload.program)
     except (ValueError, TypeError) as error:
         raise HTTPException(422, str(error)) from error
     authorized_program(grant, program['id'])
+    for item in program['items']:
+        if item.get('epub_asset_id'):
+            stored_epub(grant['tenant_id'], program['id'], item['epub_asset_id'], metadata_only=True)
     return program
 
 
@@ -227,7 +293,10 @@ def reader_epub(program_id: str, item_id: str, subject: str = Depends(authentica
     if not item:
         raise HTTPException(404, 'Item not found.')
     try:
-        if item.get('reader_url') and not notes:
+        if item.get('epub_asset_id') and not notes:
+            record = stored_epub(account['tenant_id'], program_id, item['epub_asset_id'])
+            epub = bytes(record['data'])
+        elif item.get('reader_url') and not notes:
             source_html, url = fetch_reader_html(item['reader_url'])
             epub = private_reader_epub(source_html=source_html, source_url=url, title=item['title'])
         else:
@@ -239,7 +308,7 @@ def reader_epub(program_id: str, item_id: str, subject: str = Depends(authentica
 
 def epub_response(epub: bytes, filename: str = 'reading'):
     return Response(content=epub, media_type='application/epub+zip', headers={
-        'Content-Disposition': f'attachment; filename="{filename}.epub"', 'Cache-Control': 'no-store'})
+        'Content-Disposition': f'attachment; filename="{filename}.epub"', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})
 
 
 class TextExport(BaseModel):

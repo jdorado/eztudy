@@ -62,13 +62,13 @@ export function PublishedSpace({identity, onSignOut}: {
   async function exportEpub(input: EpubInput) {
     const token = await getAccessToken()
     if (!token) throw new Error('Please sign in again.')
-    const path = input.kind === 'item'
-      ? `/api/content/programs/${encodeURIComponent(input.programId)}/items/${encodeURIComponent(input.itemId)}/private-epub?notes=true`
+    const path = (input.kind === 'item' || input.kind === 'attachment')
+      ? `/api/content/programs/${encodeURIComponent(input.programId)}/items/${encodeURIComponent(input.itemId)}/private-epub${input.kind === 'item' ? '?notes=true' : ''}`
       : '/api/content/private-epub'
     const response = await fetch(apiUrl(path), {
-      method: input.kind === 'item' ? 'GET' : 'POST', cache: 'no-store',
+      method: (input.kind === 'item' || input.kind === 'attachment') ? 'GET' : 'POST', cache: 'no-store',
       headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'},
-      ...(input.kind === 'item' ? {} : {body: JSON.stringify(input)}),
+      ...((input.kind === 'item' || input.kind === 'attachment') ? {} : {body: JSON.stringify(input)}),
     })
     if (!response.ok) {
       const failure = await response.json().catch(() => null)

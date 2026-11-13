@@ -140,3 +140,17 @@ unrelated and unchanged.
 The initial sequence starts with Markdown only; it does not authorize media,
 widgets, app-owned generation, or changes to Ez. Acceptance requires actual
 frontend readback and evidence that native execution ownership remains intact.
+
+## Stored EPUB attachments
+
+A reading Item may declare `epub_asset_id`, a 64-character SHA-256 returned by
+`eztudy upload-epub FILE --program ID`. The bounded EPUB is stored separately
+from publication history in canonical MongoDB, scoped to tenant and Program.
+Publication rejects missing or foreign assets; upload alone never changes Items.
+Identical upload retries are idempotent. The signed-in Item EPUB control defaults
+to the saved full book, while notes-only export remains explicit. Assets are
+private downloads, not rendered as executable HTML. Limits: 10 MiB compressed,
+100 MiB expanded, 5,000 archive entries, no encrypted archives. Validation is
+structural, not an assertion that the source content is trustworthy. Existing
+publication versions and their referenced books are retained; deletion/quotas
+remain administrative follow-up rather than silent eviction.

@@ -141,3 +141,17 @@ Do not patch Ez, edit generated Compose, or replace native instructions to repai
 After publication, use `ez eztudy show ID` for canonical readback and report the receipt.
 The authenticated Timeline and reader must actually display the content. Ordinary
 follow-up explanations must not edit source, publish or modify the Program.
+
+## Saved EPUB attachments
+
+For a converted book that already exists, use `eztudy upload-epub /path/book.epub
+--program PROGRAM_ID`. The API validates the bounded archive, stores it privately
+for that tenant and Program, and returns `epub_asset_id` (the SHA-256). Add that
+field to the reading Item's JSON metadata, then check/publish/show normally.
+Uploads do not publish or reorder Items. Retries of identical bytes reuse the asset.
+`eztudy download-epub ASSET_ID --program PROGRAM_ID --output /new/path.epub`
+verifies the stored bytes against their hash; it never overwrites an existing file.
+The Item's EPUB action defaults to the complete saved book, not its Markdown notes.
+Files are limited to 10 MiB (100 MiB expanded), retained in canonical MongoDB,
+and served only to authenticated tenant readers or Program-scoped publishers.
+Books are downloads, never executed or embedded by the app. No public file URL.

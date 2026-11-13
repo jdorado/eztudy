@@ -9,7 +9,7 @@ dependencies = [
     "uvicorn>=0.40,<0.41",
     "PyJWT[crypto]>=2.15,<3",
     "pymongo>=4.18.2,<5",
-    "eztudy-publishing==0.1.4",
+    "eztudy-publishing==0.1.6b1",
     "markdown-it-py>=4.2,<5",
     "readability-lxml>=0.9,<1",
     "lxml>=6.1,<7",

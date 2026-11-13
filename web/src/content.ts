@@ -7,6 +7,7 @@ export interface Item {
   content: { type: 'markdown'; markdown: string } | { type: 'video' | 'podcast' | 'movie'; url: string; markdown: string }
   provenance: { text: string; sources: { title: string; url: string }[] }
   reader_url?: string
+  epub_asset_id?: string
 }
 export const contentLabels = {
   markdown: { label: 'Readout', action: 'Read', link: '' },

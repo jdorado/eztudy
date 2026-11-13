@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Item } from './content'
 
 export type EpubInput =
+  | {kind: 'attachment'; programId: string; itemId: string}
   | {kind: 'item'; programId: string; itemId: string}
   | {kind: 'text'; title: string; markdown: string}
   | {kind: 'article'; url: string; title: string}
@@ -12,7 +13,7 @@ export function EpubExport({item, programId, onExport, onClose}: {
   onClose: () => void
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [kind, setKind] = useState<EpubInput['kind']>(item?.reader_url ? 'article' : item ? 'item' : 'text')
+  const [kind, setKind] = useState<EpubInput['kind']>(item?.epub_asset_id ? 'attachment' : item?.reader_url ? 'article' : item ? 'item' : 'text')
   const [title, setTitle] = useState(item?.reader_url ? item.title : '')
   const [markdown, setMarkdown] = useState('')
   const [url, setUrl] = useState(item?.reader_url ?? item?.provenance.sources[0]?.url ?? '')
@@ -36,12 +37,12 @@ export function EpubExport({item, programId, onExport, onClose}: {
     setBusy(true)
     setError('')
     try {
-      const input: EpubInput = kind === 'item' && item && programId
+      const input: EpubInput = (kind === 'item' || kind === 'attachment') && item && programId
         ? {kind, programId, itemId: item.id}
         : kind === 'article' ? {kind, url: url.trim(), title: title.trim()}
         : {kind: 'text', title: title.trim(), markdown}
       const blob = await onExport(input)
-      const name = kind === 'item' ? `${item!.title} — notes` : title.trim() || 'Web article'
+      const name = kind === 'attachment' ? item!.title : kind === 'item' ? `${item!.title} — notes` : title.trim() || 'Web article'
       const filename = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim().slice(0, 150) || 'Reading'
       setFile(new File([blob], `${filename}.epub`, {type: 'application/epub+zip'}))
     } catch (failure) {
@@ -70,10 +71,11 @@ export function EpubExport({item, programId, onExport, onClose}: {
       <p>Turn your writing or a web article into a book you can read on Kindle.</p>
       <fieldset disabled={busy}>
         <label>Content<select value={kind} onChange={event => {setKind(event.target.value as EpubInput['kind']); setError('')}}>
+          {item?.epub_asset_id && <option value="attachment">Saved EPUB (complete book)</option>}
           {item && <option value="item">Item text and notes only</option>}
           <option value="text">My text</option><option value="article">Web article</option>
         </select></label>
-        {kind === 'item' ? <p className="epub-item">{item?.title}<small>Exports the text shown in EzStudy. To include a linked article, choose Web article.</small></p> : <>
+        {kind === 'attachment' ? <p className="epub-item">{item?.title}<small>Downloads the complete saved EPUB, including its original figures and formatting.</small></p> : kind === 'item' ? <p className="epub-item">{item?.title}<small>Exports the text shown in EzStudy. To include a linked article, choose Web article.</small></p> : <>
           {kind === 'article' && <>
             <label>Article URL<input type="url" required maxLength={2000} value={url} onChange={event => setUrl(event.target.value)} placeholder="https://…" autoComplete="url" /></label>
             {!!item?.provenance.sources.length && <label>Or choose an item source<select value="" onChange={event => setUrl(event.target.value)}><option value="" disabled>Choose a source…</option>{item.provenance.sources.map(source => <option key={source.url} value={source.url}>{source.title}</option>)}</select></label>}
@@ -82,7 +84,7 @@ export function EpubExport({item, programId, onExport, onClose}: {
           <label>{kind === 'article' ? 'Title (optional)' : 'Title'}<input required={kind === 'text'} maxLength={200} value={title} onChange={event => setTitle(event.target.value)} placeholder={kind === 'article' ? 'Use the article title' : 'Name your reading'} /></label>
           {kind === 'text' && <label>Your text<textarea required maxLength={100000} rows={8} value={markdown} onChange={event => setMarkdown(event.target.value)} placeholder="Paste or write here. Markdown formatting is supported." /></label>}
         </>}
-        <button className="epub-primary" type="submit" disabled={!onExport}>{busy ? 'Preparing EPUB…' : 'Create EPUB'}</button>
+        <button className="epub-primary" type="submit" disabled={!onExport}>{busy ? 'Preparing EPUB…' : kind === 'attachment' ? 'Get saved EPUB' : 'Create EPUB'}</button>
       </fieldset>
       {busy && <p role="status">Preparing your reading…</p>}
       {!onExport && <p>Sign in to create an EPUB. This is a layout preview.</p>}
